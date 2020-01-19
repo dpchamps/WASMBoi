@@ -1,4 +1,5 @@
-use crate::spec::mnemonic::*;
+#![allow(non_camel_case_types)]
+
 pub const CB_PREFIX : u8 = 0xCB;
 
 pub enum OpcodeError {
@@ -7,7 +8,267 @@ pub enum OpcodeError {
 
 type OpcodeLookupResult = Result<Instruction, OpcodeError>;
 
-pub fn cb_prefix_instruction_lookup(byte : u8) -> OpcodeLookupResult {
+pub enum Instruction {
+    //8 BIT LOAD
+    LD_RR,
+    LD_RN ,
+    LD_RHL ,
+    LD_HLR ,
+    LD_HLN ,
+    LD_ABC ,
+    LD_ADE ,
+    LD_AN ,
+    LD_ANN ,
+    LD_BCA ,
+    LD_DEA ,
+    LD_NA ,
+    LD_NNA ,
+    LD_AFF00C ,
+    LD_FF00CA ,
+    LD_HLIA ,
+    LD_AHLI ,
+    LD_HLDA ,
+    LD_AHLD ,
+
+    //16 BIT LOAD
+    LD_RRNN ,
+    LD_SPHL ,
+    PUSH_RR ,
+    POP_RR ,
+
+    //8 BIT ARITHMETIC / LOGIC
+    ADD_AR ,
+    ADD_AN ,
+    ADD_AHL ,
+    ADC_AR ,
+    ADC_AN ,
+    ADC_AHL ,
+    SUB_R ,
+    SUB_N ,
+    SUB_HL ,
+    SBC_AR ,
+    SBC_AN ,
+    SBC_AHL ,
+    AND_R ,
+    AND_N ,
+    AND_HL ,
+    XOR_R ,
+    XOR_N ,
+    XOR_HL ,
+    OR_R ,
+    OR_N ,
+    OR_HL ,
+    CP_R ,
+    CP_N ,
+    CP_HL ,
+    INC_R ,
+    INC_HL ,
+    DEC_R ,
+    DEC_HL ,
+    DAA ,
+    CPL ,
+
+    //16 BIT ARITHMETIC / LOGICAL
+    ADD_HLRR ,
+    ADD_SPN ,
+    INC_RR ,
+    DEC_RR ,
+    LD_SPDD ,
+    LDHL ,
+
+    //ROTATE AND SHIFT
+    RLCA ,
+    RLA ,
+    RRCA ,
+    RRA ,
+    RLC_R ,
+    RLC_HL ,
+    RL_R ,
+    RL_HL ,
+    RRC_R ,
+    RRC_HL ,
+    RR_R ,
+    RR_HL ,
+    SLA_R ,
+    SLA_HL ,
+    SWAP_R ,
+    SWAP_HL ,
+    SRA_R ,
+    SRA_HL ,
+    SRL_R ,
+    SRL_HL ,
+
+    //BITWISE
+    BIT_NR ,
+    BIT_NHL ,
+    SET_NR ,
+    SET_NHL ,
+    RES_NR ,
+    RES_NHL ,
+
+    //CPU CONTROL
+    CCF ,
+    SCF ,
+    NOP ,
+    HALT ,
+    STOP ,
+    DI ,
+    EI ,
+
+    //JUMP
+    JP_NN ,
+    JP_HL ,
+    JP_FNN ,
+    JR_PCDD ,
+    JR_FPCDD ,
+    CALL_NN ,
+    CALL_FNN ,
+    RET,
+    RET_F ,
+    RETI ,
+    RST ,
+}
+
+impl Instruction {
+    pub fn is_branch(instruction : &Instruction) -> bool {
+        match instruction {
+            Instruction::JP_NN |
+            Instruction::JP_HL |
+            Instruction::JP_FNN |
+            Instruction::CALL_FNN |
+            Instruction::CALL_NN => true,
+            _ => false
+        }
+    }
+
+    pub fn is_return(instruction : &Instruction) -> bool {
+        match instruction {
+            Instruction::RET => true,
+            _ => false
+        }
+    }
+
+    pub fn is_call(instruction : &Instruction) -> bool {
+        match instruction {
+            Instruction::CALL_FNN |
+            Instruction::CALL_NN => true,
+            _ => false
+        }
+    }
+
+    pub fn get_size(instruction : &Instruction) -> usize {
+        match instruction {
+            Instruction::ADD_AR   |
+            Instruction::ADD_AHL  |
+            Instruction::ADD_HLRR |
+            Instruction::AND_HL   |
+            Instruction::AND_R    |
+            Instruction::CP_HL    |
+            Instruction::CP_R     |
+            Instruction::OR_HL    |
+            Instruction::OR_R     |
+            Instruction::SUB_HL   |
+            Instruction::SUB_R    |
+            Instruction::XOR_HL   |
+            Instruction::XOR_R    |
+            Instruction::DEC_HL   |
+            Instruction::DEC_R    |
+            Instruction::DEC_RR   |
+            Instruction::INC_HL   |
+            Instruction::INC_R    |
+            Instruction::INC_RR   |
+            Instruction::SBC_AR   |
+            Instruction::SBC_AHL  |
+            Instruction::ADC_AHL  |
+            Instruction::ADC_AR   |
+            Instruction::RET      |
+            Instruction::RET_F    |
+            Instruction::RETI     |
+            Instruction::RST      |
+            Instruction::PUSH_RR  |
+            Instruction::POP_RR   |
+            Instruction::DAA      |
+            Instruction::CPL      |
+            Instruction::NOP      |
+            Instruction::CCF      |
+            Instruction::SCF      |
+            Instruction::DI       |
+            Instruction::EI       |
+            Instruction::HALT     |
+            Instruction::STOP     |
+            Instruction::JP_HL    |
+            Instruction::LD_RR    |
+            Instruction::LD_RHL   |
+            Instruction::LD_HLR   |
+            Instruction::LD_ABC   |
+            Instruction::LD_ADE   |
+            Instruction::LD_AFF00C |
+            Instruction::LD_FF00CA |
+            Instruction::LD_AHLI  |
+            Instruction::LD_AHLD  |
+            Instruction::LD_BCA   |
+            Instruction::LD_DEA   |
+            Instruction::LD_HLIA  |
+            Instruction::LD_HLDA  |
+            Instruction::LD_SPHL  |
+            Instruction::RLCA     |
+            Instruction::RLA      |
+            Instruction::RRCA     |
+            Instruction::RRA      => 0,
+
+
+            Instruction::ADD_AN   |
+            Instruction::ADD_SPN  |
+            Instruction::AND_N    |
+            Instruction::CP_N     |
+            Instruction::OR_N     |
+            Instruction::SUB_N    |
+            Instruction::XOR_N    |
+            Instruction::SBC_AN   |
+            Instruction::ADC_AN   |
+            Instruction::BIT_NHL  |
+            Instruction::BIT_NR   |
+            Instruction::SET_NHL  |
+            Instruction::SET_NR   |
+            Instruction::RES_NHL  |
+            Instruction::RES_NR   |
+            Instruction::JR_PCDD  |
+            Instruction::JR_FPCDD |
+            Instruction::LD_RN    |
+            Instruction::LD_HLN   |
+            Instruction::LD_AN    |
+            Instruction::LD_NA    |
+            Instruction::LDHL     |
+            Instruction::RLC_R    |
+            Instruction::RLC_HL   |
+            Instruction::RL_R     |
+            Instruction::RL_HL    |
+            Instruction::RRC_R    |
+            Instruction::RRC_HL   |
+            Instruction::RR_R     |
+            Instruction::RR_HL    |
+            Instruction::SLA_R    |
+            Instruction::SLA_HL   |
+            Instruction::SRA_R    |
+            Instruction::SRA_HL   |
+            Instruction::SRL_R    |
+            Instruction::SRL_HL   |
+            Instruction::SWAP_R   |
+            Instruction::SWAP_HL  => 1,
+
+            Instruction::CALL_NN  |
+            Instruction::CALL_FNN |
+            Instruction::JP_NN    |
+            Instruction::JP_FNN   |
+            Instruction::LD_ANN   |
+            Instruction::LD_NNA   |
+            Instruction::LD_RRNN  |
+            Instruction::LD_SPDD => 2
+        }
+    }
+}
+
+pub fn cb_prefix_instruction_lookup(byte : &u8) -> OpcodeLookupResult {
     match byte{
         0x0=> Ok(Instruction::RLC_R),
         0x1=> Ok(Instruction::RLC_R),
@@ -269,7 +530,7 @@ pub fn cb_prefix_instruction_lookup(byte : u8) -> OpcodeLookupResult {
     }
 }
 
-pub fn instruction_lookup(byte : u8) -> OpcodeLookupResult {
+pub fn instruction_lookup(byte : &u8) -> OpcodeLookupResult {
     match byte{
         0x0 => Ok(Instruction::NOP),
         0x1 => Ok(Instruction::LD_RRNN),

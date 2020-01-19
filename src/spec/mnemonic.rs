@@ -1,178 +1,62 @@
 #![allow(non_camel_case_types)]
 
+use crate::spec::opcode::Instruction;
 pub type MnemonicValue = &'static str;
 
-pub const LD : MnemonicValue = "LD";
-pub const LDHL : MnemonicValue = "LDHL";
-pub const PUSH : MnemonicValue = "PUSH";
-pub const POP : MnemonicValue = "POP";
-pub const ADD : MnemonicValue = "ADD";
-pub const ADC : MnemonicValue = "ADC";
-pub const SUB : MnemonicValue = "SUB";
-pub const SBC : MnemonicValue = "SBC";
-pub const AND : MnemonicValue = "AND";
-pub const XOR : MnemonicValue = "XOR";
-pub const OR : MnemonicValue = "OR";
-pub const CP : MnemonicValue = "CP";
-pub const INC : MnemonicValue = "INC";
-pub const DEC : MnemonicValue = "DEC";
-pub const DAA : MnemonicValue = "DAA";
-pub const CPL : MnemonicValue = "CPL";
-pub const RLCA : MnemonicValue = "RLCA";
-pub const RLA : MnemonicValue = "RLA";
-pub const RRCA : MnemonicValue = "RRCA";
-pub const RRA : MnemonicValue = "RRA";
-pub const RLC : MnemonicValue = "RLC";
-pub const RL : MnemonicValue = "RL";
-pub const RRC : MnemonicValue = "RRC";
-pub const RR : MnemonicValue = "RR";
-pub const SLA : MnemonicValue = "SLA";
-pub const SWAP : MnemonicValue = "SWAP";
-pub const SRA : MnemonicValue = "SRA";
-pub const SRL : MnemonicValue = "SRL";
-pub const BIT : MnemonicValue = "BIT";
-pub const SET : MnemonicValue = "SET";
-pub const RES : MnemonicValue = "RES";
-pub const CCF : MnemonicValue = "CCF";
-pub const SCF : MnemonicValue = "SCF";
-pub const NOP : MnemonicValue = "NOP";
-pub const HALT : MnemonicValue = "HALT";
-pub const STOP : MnemonicValue = "STOP";
-pub const DI : MnemonicValue = "DI";
-pub const EI : MnemonicValue = "EI";
-pub const JP : MnemonicValue = "JP";
-pub const JR : MnemonicValue = "JR";
-pub const CALL : MnemonicValue = "CALL";
-pub const RET : MnemonicValue = "RET";
-pub const RETI : MnemonicValue = "RETI";
-pub const RST : MnemonicValue = "RST";
-//Data mnemonics; write byte and write word (borrowed from 8080 spec) these mnemonics are used
+pub mod mnemonic {
+ use crate::spec::mnemonic::MnemonicValue;
+
+ pub const LD : MnemonicValue = "LD";
+ pub const LDHL : MnemonicValue = "LDHL";
+ pub const PUSH : MnemonicValue = "PUSH";
+ pub const POP : MnemonicValue = "POP";
+ pub const ADD : MnemonicValue = "ADD";
+ pub const ADC : MnemonicValue = "ADC";
+ pub const SUB : MnemonicValue = "SUB";
+ pub const SBC : MnemonicValue = "SBC";
+ pub const AND : MnemonicValue = "AND";
+ pub const XOR : MnemonicValue = "XOR";
+ pub const OR : MnemonicValue = "OR";
+ pub const CP : MnemonicValue = "CP";
+ pub const INC : MnemonicValue = "INC";
+ pub const DEC : MnemonicValue = "DEC";
+ pub const DAA : MnemonicValue = "DAA";
+ pub const CPL : MnemonicValue = "CPL";
+ pub const RLCA : MnemonicValue = "RLCA";
+ pub const RLA : MnemonicValue = "RLA";
+ pub const RRCA : MnemonicValue = "RRCA";
+ pub const RRA : MnemonicValue = "RRA";
+ pub const RLC : MnemonicValue = "RLC";
+ pub const RL : MnemonicValue = "RL";
+ pub const RRC : MnemonicValue = "RRC";
+ pub const RR : MnemonicValue = "RR";
+ pub const SLA : MnemonicValue = "SLA";
+ pub const SWAP : MnemonicValue = "SWAP";
+ pub const SRA : MnemonicValue = "SRA";
+ pub const SRL : MnemonicValue = "SRL";
+ pub const BIT : MnemonicValue = "BIT";
+ pub const SET : MnemonicValue = "SET";
+ pub const RES : MnemonicValue = "RES";
+ pub const CCF : MnemonicValue = "CCF";
+ pub const SCF : MnemonicValue = "SCF";
+ pub const NOP : MnemonicValue = "NOP";
+ pub const HALT : MnemonicValue = "HALT";
+ pub const STOP : MnemonicValue = "STOP";
+ pub const DI : MnemonicValue = "DI";
+ pub const EI : MnemonicValue = "EI";
+ pub const JP : MnemonicValue = "JP";
+ pub const JR : MnemonicValue = "JR";
+ pub const CALL : MnemonicValue = "CALL";
+ pub const RET : MnemonicValue = "RET";
+ pub const RETI : MnemonicValue = "RETI";
+ pub const RST : MnemonicValue = "RST";
+ //Data mnemonics; write byte and write word (borrowed from 8080 spec) these mnemonics are used
 // for unreachable pieces of code
-pub const DB : MnemonicValue = "DB";
-pub const DW : MnemonicValue = "DW";
-
-pub enum Instruction {
-//8 BIT LOAD
- LD_RR,
- LD_RN ,
- LD_RHL ,
- LD_HLR ,
- LD_HLN ,
- LD_ABC ,
- LD_ADE ,
- LD_AN ,
- LD_ANN ,
- LD_BCA ,
- LD_DEA ,
- LD_NA ,
- LD_NNA ,
- LD_AFF00C ,
- LD_FF00CA ,
- LD_HLIA ,
- LD_AHLI ,
- LD_HLDA ,
- LD_AHLD ,
-
-//16 BIT LOAD
- LD_RRNN ,
- LD_SPHL ,
- PUSH_RR ,
- POP_RR ,
-
-//8 BIT ARITHMETIC / LOGIC
- ADD_AR ,
- ADD_AN ,
- ADD_AHL ,
- ADC_AR ,
- ADC_AN ,
- ADC_AHL ,
- SUB_R ,
- SUB_N ,
- SUB_HL ,
- SBC_AR ,
- SBC_AN ,
- SBC_AHL ,
- AND_R ,
- AND_N ,
- AND_HL ,
- XOR_R ,
- XOR_N ,
- XOR_HL ,
- OR_R ,
- OR_N ,
- OR_HL ,
- CP_R ,
- CP_N ,
- CP_HL ,
- INC_R ,
- INC_HL ,
- DEC_R ,
- DEC_HL ,
- DAA ,
- CPL ,
-
-//16 BIT ARITHMETIC / LOGICAL
- ADD_HLRR ,
- ADD_SPN ,
- INC_RR ,
- DEC_RR ,
- LD_SPDD ,
- LDHL ,
-
-//ROTATE AND SHIFT
- RLCA ,
- RLA ,
- RRCA ,
- RRA ,
- RLC_R ,
- RLC_HL ,
- RL_R ,
- RL_HL ,
- RRC_R ,
- RRC_HL ,
- RR_R ,
- RR_HL ,
- SLA_R ,
- SLA_HL ,
- SWAP_R ,
- SWAP_HL ,
- SRA_R ,
- SRA_HL ,
- SRL_R ,
- SRL_HL ,
-
-//BITWISE
- BIT_NR ,
- BIT_NHL ,
- SET_NR ,
- SET_NHL ,
- RES_NR ,
- RES_NHL ,
-
-//CPU CONTROL
- CCF ,
- SCF ,
- NOP ,
- HALT ,
- STOP ,
- DI ,
- EI ,
-
-//JUMP
- JP_NN ,
- JP_HL ,
- JP_FNN ,
- JR_PCDD ,
- JR_FPCDD ,
- CALL_NN ,
- CALL_FNN ,
- RET,
- RET_F ,
- RETI ,
- RST ,
+ pub const DB : MnemonicValue = "DB";
+ pub const DW : MnemonicValue = "DW";
 }
 
-pub fn mnemonic_lookup(instruction : Instruction) -> MnemonicValue {
+pub fn mnemonic_lookup(instruction : &Instruction) -> MnemonicValue {
  match instruction {
   Instruction::LD_RR|
   Instruction::LD_RN |
@@ -194,134 +78,134 @@ pub fn mnemonic_lookup(instruction : Instruction) -> MnemonicValue {
   Instruction::LD_HLDA |
   Instruction::LD_AHLD |
   Instruction::LD_RRNN |
-  Instruction::LD_SPHL => LD,
+  Instruction::LD_SPHL => mnemonic::LD,
 
-  Instruction::PUSH_RR => PUSH,
-  Instruction::POP_RR => POP,
+  Instruction::PUSH_RR => mnemonic::PUSH,
+  Instruction::POP_RR => mnemonic::POP,
 
   Instruction::ADD_AR |
   Instruction::ADD_AN |
-  Instruction::ADD_AHL => ADD,
+  Instruction::ADD_AHL => mnemonic::ADD,
 
   Instruction::ADC_AR |
   Instruction::ADC_AN |
-  Instruction::ADC_AHL => ADC,
+  Instruction::ADC_AHL => mnemonic::ADC,
 
   Instruction::SUB_R |
   Instruction::SUB_N |
-  Instruction::SUB_HL => SUB,
+  Instruction::SUB_HL => mnemonic::SUB,
 
   Instruction::SBC_AR |
   Instruction::SBC_AN |
-  Instruction::SBC_AHL => SBC,
+  Instruction::SBC_AHL => mnemonic::SBC,
 
   Instruction::AND_R |
   Instruction::AND_N |
-  Instruction::AND_HL => AND,
+  Instruction::AND_HL => mnemonic::AND,
 
   Instruction::XOR_R |
   Instruction::XOR_N |
-  Instruction::XOR_HL => XOR,
+  Instruction::XOR_HL => mnemonic::XOR,
 
   Instruction::OR_R |
   Instruction::OR_N |
-  Instruction::OR_HL => OR,
+  Instruction::OR_HL => mnemonic::OR,
 
   Instruction::CP_R |
   Instruction::CP_N |
-  Instruction::CP_HL => CP,
+  Instruction::CP_HL => mnemonic::CP,
 
   Instruction::INC_R |
-  Instruction::INC_HL => INC,
+  Instruction::INC_HL => mnemonic::INC,
 
   Instruction::DEC_R |
-  Instruction::DEC_HL => DEC,
+  Instruction::DEC_HL => mnemonic::DEC,
 
-  Instruction::DAA => DAA,
+  Instruction::DAA => mnemonic::DAA,
 
-  Instruction::CPL => CPL,
+  Instruction::CPL => mnemonic::CPL,
 
   Instruction::ADD_HLRR |
-  Instruction::ADD_SPN => ADD,
+  Instruction::ADD_SPN => mnemonic::ADD,
 
-  Instruction::INC_RR => INC,
+  Instruction::INC_RR => mnemonic::INC,
 
-  Instruction::DEC_RR => DEC,
+  Instruction::DEC_RR => mnemonic::DEC,
 
-  Instruction::LD_SPDD => LD,
+  Instruction::LD_SPDD => mnemonic::LD,
 
-  Instruction::LDHL => LDHL,
+  Instruction::LDHL => mnemonic::LDHL,
 
-  Instruction::RLCA => RLCA,
+  Instruction::RLCA => mnemonic::RLCA,
 
-  Instruction::RLA => RLA,
+  Instruction::RLA => mnemonic::RLA,
 
-  Instruction::RRCA => RRCA,
+  Instruction::RRCA => mnemonic::RRCA,
 
-  Instruction::RRA => RRA,
+  Instruction::RRA => mnemonic::RRA,
 
   Instruction::RLC_R |
-  Instruction::RLC_HL => RLC,
+  Instruction::RLC_HL => mnemonic::RLC,
 
   Instruction::RL_R |
-  Instruction::RL_HL => RL,
+  Instruction::RL_HL => mnemonic::RL,
 
   Instruction::RRC_R |
-  Instruction::RRC_HL => RRC,
+  Instruction::RRC_HL => mnemonic::RRC,
 
   Instruction::RR_R |
-  Instruction::RR_HL  => RR,
+  Instruction::RR_HL  => mnemonic::RR,
 
   Instruction::SLA_R |
-  Instruction::SLA_HL => SLA,
+  Instruction::SLA_HL => mnemonic::SLA,
 
   Instruction::SWAP_R |
-  Instruction::SWAP_HL => SWAP,
+  Instruction::SWAP_HL => mnemonic::SWAP,
 
   Instruction::SRA_R |
-  Instruction::SRA_HL => SRA,
+  Instruction::SRA_HL => mnemonic::SRA,
 
   Instruction::SRL_R |
-  Instruction::SRL_HL => SRL,
+  Instruction::SRL_HL => mnemonic::SRL,
 
   Instruction::BIT_NR |
-  Instruction::BIT_NHL => BIT,
+  Instruction::BIT_NHL => mnemonic::BIT,
 
   Instruction::SET_NR |
-  Instruction::SET_NHL => SET,
+  Instruction::SET_NHL => mnemonic::SET,
 
   Instruction::RES_NR |
-  Instruction::RES_NHL => RES,
+  Instruction::RES_NHL => mnemonic::RES,
 
-  Instruction::CCF => CCF,
+  Instruction::CCF => mnemonic::CCF,
 
-  Instruction::SCF => SCF,
+  Instruction::SCF => mnemonic::SCF,
 
-  Instruction::NOP  => NOP,
+  Instruction::NOP  => mnemonic::NOP,
 
-  Instruction::HALT => HALT,
+  Instruction::HALT => mnemonic::HALT,
 
-  Instruction::STOP => STOP,
+  Instruction::STOP => mnemonic::STOP,
 
-  Instruction::DI => DI,
+  Instruction::DI => mnemonic::DI,
 
-  Instruction::EI => EI,
+  Instruction::EI => mnemonic::EI,
 
   Instruction::JP_NN |
   Instruction::JP_HL |
-  Instruction::JP_FNN => JP,
+  Instruction::JP_FNN => mnemonic::JP,
 
   Instruction::JR_PCDD |
-  Instruction::JR_FPCDD => JR,
+  Instruction::JR_FPCDD => mnemonic::JR,
 
   Instruction::CALL_NN |
-  Instruction::CALL_FNN => CALL,
+  Instruction::CALL_FNN => mnemonic::CALL,
 
   Instruction::RET|
-  Instruction::RET_F => RET,
+  Instruction::RET_F => mnemonic::RET,
 
-  Instruction::RETI => RETI,
+  Instruction::RETI => mnemonic::RETI,
 
-  Instruction::RST => RST
+  Instruction::RST => mnemonic::RST
  }
 }
