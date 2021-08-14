@@ -1,110 +1,124 @@
-use crate::spec::mnemonic::{mnemonic_lookup, MnemonicValue, mnemonic};
-use crate::spec::opcode::{Instruction, instruction_lookup};
-use crate::spec::register::{
-    Register,
-    lookup_ld_register,
-    lookup_stack_op_register
-};
 use crate::spec::cartridge_header::{Cartridge, CartridgeError};
-use std::collections::HashSet;
+use crate::spec::mnemonic::{mnemonic, mnemonic_lookup, MnemonicValue};
+use crate::spec::opcode::{instruction_lookup, Instruction};
+use crate::spec::register::{Register};
 use crate::util::byte_ops::hi_lo_combine;
+use crate::{format_byte};
 
-pub mod decoder;
+use std::collections::HashSet;
+use crate::dasm::decoder::decode;
+
 pub mod decode_ld;
+pub mod decoder;
 
+#[derive(Debug)]
 pub enum DasmError {
-    InvalidRom,
-    DecoderError(&'static str)
+    InvalidRom(String),
+    DecoderError(&'static str),
+    PartialDASM(String),
 }
 
 pub struct Disassembler {
-    branches : Vec<u16>,
-    visited : HashSet<u16>,
-    labels : HashSet<u16>,
-    buffer : Vec<u8>,
-    cartridge : Cartridge
+    branches: Vec<u16>,
+    visited: HashSet<u16>,
+    labels: HashSet<u16>,
+    buffer: Vec<u8>,
+    cartridge: Cartridge,
 }
 
+#[derive(Debug)]
 pub struct InstructionData {
-    byte : u8,
+    byte: u8,
     size: usize,
-    instruction : Instruction,
-    data : Vec<u8>
+    instruction: Instruction,
+    data: Vec<u8>,
 }
 
 impl Disassembler {
-    pub fn new(rom : &Vec<u8>) -> Result<Self, DasmError> {
+    pub fn new(rom: &Vec<u8>) -> Result<Self, DasmError> {
         let cartridge = match Cartridge::new(rom) {
             Ok(cartridge) => cartridge,
-            _ => return Err(DasmError::InvalidRom)
+            _ => return Err(DasmError::InvalidRom("Could not read cartridge".to_owned())),
         };
 
         Ok(Disassembler {
-            branches : vec![],
-            visited : HashSet::new(),
-            labels : HashSet::new(),
-            buffer : rom.clone(),
-            cartridge
+            branches: vec![],
+            visited: HashSet::new(),
+            labels: HashSet::new(),
+            buffer: rom.clone(),
+            cartridge,
         })
     }
 
-    pub fn extract_instruction_data(&self, byte : &u8, idx : usize) -> Result<InstructionData, DasmError> {
-        let instruction = match instruction_lookup(byte){
+    pub fn extract_instruction_data(
+        &self,
+        byte: &u8,
+        idx: usize,
+    ) -> Result<InstructionData, DasmError> {
+        let instruction = match instruction_lookup(byte) {
             Ok(instruction) => instruction,
-            _ => return Err(DasmError::InvalidRom)
+            _ => {
+                // println!("{}", format!("Failed to disassemble instruction {}. Defaulting to NOP", format_byte!(byte)));
+                Instruction::NOP
+            },
         };
 
         let size = Instruction::get_size(&instruction);
-        let data : Vec<u8> = self.buffer[idx..idx+size].to_vec();
+        let data: Vec<u8> = self.buffer[idx..idx + size].to_vec();
 
-        Ok(InstructionData{
-            byte : byte.clone(),
+        Ok(InstructionData {
+            byte: byte.clone(),
             instruction,
             data,
-            size
+            size,
         })
     }
 }
 
-fn extract_instruction_data(byte : &u8, buffer : &Vec<u8>, idx : usize) -> Result<InstructionData, DasmError> {
-    let instruction = match instruction_lookup(byte){
-        Ok(instruction) => instruction,
-        _ => return Err(DasmError::InvalidRom)
-    };
 
-    let size = Instruction::get_size(&instruction);
-    let data : Vec<u8> = buffer[idx..idx+size].to_vec();
+fn trace(dasm: &mut Disassembler) -> Result<(Vec<Vec<String>>), DasmError> {
+    let mut paths : Vec<Vec<String>> = Vec::new();
 
-    Ok(InstructionData{
-        byte : byte.clone(),
-        instruction,
-        data,
-        size
-    })
-}
-
-fn trace(dasm : &mut Disassembler) -> Result<(), DasmError>{
     while dasm.branches.len() > 0 {
-        let head =  match dasm.branches.pop(){
+        let mut path : Vec<String> = Vec::new();
+
+        let head = match dasm.branches.pop() {
             Some(result) => result,
-            _ => return Err(DasmError::InvalidRom)
+            _ => return Err(DasmError::InvalidRom("Failed to pop a branch. Something terrible happened".to_owned())),
         };
 
-        let mut idx : usize = head as usize;
+        let mut idx: usize = head as usize;
+        println!("Head {}", idx);
 
-        loop{
-            if idx > dasm.buffer.len() || dasm.labels.contains(&(idx as u16)){
-                break;
+        'inner: loop {
+            // println!("Top Idx: {}. Buffer Length: {}", idx, dasm.buffer.len());
+            // println!(
+            //     "Label Exists: {}, Has Been Visited: {}",
+            //     dasm.labels.contains(&(idx as u16)),
+            //     dasm.visited.contains(&(idx as u16))
+            // );
+            if idx > dasm.buffer.len() || (dasm.labels.contains(&(idx as u16) ) && dasm.visited.contains(&(idx as u16))) {
+                break 'inner;
             }
 
             dasm.visited.insert(idx as u16);
 
             let instruction_data = dasm.extract_instruction_data(&dasm.buffer[idx], idx)?;
+            let decoded = match decoder::decode(&instruction_data) {
+                Ok(decoded) => decoded,
+                // Err(message) => return Err(DasmError::DecoderError(message)),
+                Err(message) => message.to_string(),
+            };
+            path.push(decoded);
+
+            println!("idx: {}, {:?}", idx, instruction_data);
 
             idx += 1 + instruction_data.size;
 
+
             if Instruction::is_branch(&instruction_data.instruction) {
-                let next_address = hi_lo_combine(instruction_data.byte, dasm.buffer[idx+1]);
+                let next_address = hi_lo_combine(instruction_data.data[1], instruction_data.data[0]);
+                println!("Next Address: {}, from: {}, {}", next_address, instruction_data.byte, dasm.buffer[idx+1]);
                 dasm.labels.insert(next_address);
 
                 if Instruction::is_call(&instruction_data.instruction) {
@@ -115,32 +129,37 @@ fn trace(dasm : &mut Disassembler) -> Result<(), DasmError>{
             }
 
             if Instruction::is_return(&instruction_data.instruction) {
-                break;
+                break 'inner;
             };
         }
+        println!("Finished inner loop {}", dasm.branches.len());
+        paths.push(path);
     }
+    println!("Finished outer loop");
 
-    Ok(())
+
+    Ok(paths)
 }
 
-pub fn disassemble(rom : &Vec<u8>) -> Result<String, DasmError>{
-    let mut disassembly : String = String::from("");
+pub fn disassemble(rom: &Vec<u8>) -> Result<String, DasmError> {
+    let mut disassembly: String = String::from("");
     let mut dasm = Disassembler::new(rom)?;
 
     dasm.branches.push(dasm.cartridge.start_address);
 
-    trace(&mut dasm);
+    let paths = trace(&mut dasm)?;
+    println!("Done tracing");
 
-    for (idx, byte) in dasm.buffer.clone().into_iter().enumerate() {
-        let instruction_data = dasm.extract_instruction_data(&byte,  idx)?;
-
-        let decoded = match decoder::decode(&instruction_data) {
-            Ok(decoded) => decoded,
-            Err(message) => return Err(DasmError::DecoderError(message))
-        };
-
-        disassembly = format!("{}\n{}", disassembly, decoded);
+    for path in paths {
+        for instruction in path {
+            disassembly.push_str("\n");
+            disassembly.push_str(&instruction);
+        }
+        disassembly.push_str("\n;--\n");
     }
+
+
+    println!("Done everything");
 
     Ok(disassembly)
 }
