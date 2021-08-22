@@ -6,6 +6,7 @@ use crate::util::byte_ops::hi_lo_combine;
 use crate::{format_byte};
 
 use std::collections::HashSet;
+use std::fmt;
 use crate::dasm::decoder::decode;
 
 pub mod decode_ld;
@@ -28,10 +29,19 @@ pub struct Disassembler {
 
 #[derive(Debug)]
 pub struct InstructionData {
-    byte: u8,
-    size: usize,
-    instruction: Instruction,
-    data: Vec<u8>,
+    pub byte: u8,
+    pub size: usize,
+    pub instruction: Instruction,
+    pub data: Vec<u8>,
+}
+
+impl fmt::Display for InstructionData {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match decoder::decode(self) {
+            Ok(s) => write!(f, "{}", s),
+            Err(e) => Err(fmt::Error)
+        }
+    }
 }
 
 impl Disassembler {
@@ -47,6 +57,27 @@ impl Disassembler {
             labels: HashSet::new(),
             buffer: rom.clone(),
             cartridge,
+        })
+    }
+
+    pub fn get_instruction_data(
+        byte: &u8,
+        idx: &u16,
+        buffer: &[u8]
+    ) -> Result<InstructionData, DasmError> {
+        let instruction = match instruction_lookup(&byte) {
+            Ok(instruction) => instruction,
+            _ => Instruction::UNIMPLEMENTED
+        };
+
+        let size = Instruction::get_size(&instruction);
+        let data: Vec<u8> = buffer[(*idx as usize)..(*idx as usize) + size].to_vec();
+
+        Ok(InstructionData {
+            byte: byte.clone(),
+            instruction,
+            data,
+            size,
         })
     }
 

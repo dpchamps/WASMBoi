@@ -54,6 +54,8 @@ pub mod mnemonic {
     // for unreachable pieces of code
     pub const DB: MnemonicValue = "DB";
     pub const DW: MnemonicValue = "DW";
+
+    pub const UNIMPLEMENTED: MnemonicValue = "UNIMPLEMENTED";
 }
 
 pub fn mnemonic_lookup(instruction: &Instruction) -> MnemonicValue {
@@ -172,5 +174,7 @@ pub fn mnemonic_lookup(instruction: &Instruction) -> MnemonicValue {
         Instruction::RETI => mnemonic::RETI,
 
         Instruction::RST => mnemonic::RST,
+
+        Instruction::UNIMPLEMENTED => mnemonic::UNIMPLEMENTED
     }
 }

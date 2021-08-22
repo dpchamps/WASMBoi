@@ -1,5 +1,6 @@
 use crate::util::byte_ops::*;
 use std::str;
+use std::fmt;
 
 pub enum CartridgeError {
     InvalidCartridgeCode,
@@ -112,8 +113,22 @@ pub struct Cartridge {
     pub ram_size: usize,
 }
 
+impl fmt::Display for Cartridge {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Title: {}\nCartridge Type: {}\nStart Address: {}\nRom Size: {}\nRam Size: {}",
+            self.game_title,
+            self.cartridge_type,
+            self.start_address,
+            self.rom_size,
+            self.ram_size
+        )
+    }
+}
+
 impl Cartridge {
-    pub fn new(buffer: &Vec<u8>) -> Result<Self, CartridgeError> {
+    pub fn new(buffer: &[u8]) -> Result<Self, CartridgeError> {
         let game_title = match str::from_utf8(
             &buffer[cartridge_header_address::GAME_TITLE
                 ..cartridge_header_address::GAME_TITLE + GAME_TITLE_LENGTH],

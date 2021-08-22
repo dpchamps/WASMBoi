@@ -128,6 +128,9 @@ pub enum Instruction {
     RET_F,
     RETI,
     RST,
+
+    //Debug
+    UNIMPLEMENTED
 }
 
 impl Instruction {
@@ -214,6 +217,7 @@ impl Instruction {
             | Instruction::RLCA
             | Instruction::RLA
             | Instruction::RRCA
+            | Instruction::UNIMPLEMENTED
             | Instruction::RRA => 0,
 
             Instruction::ADD_AN

@@ -36,11 +36,26 @@ pub struct Register {
     h: u8,
     l: u8,
     f: u8,
-    pc: u16,
-    sp: u16,
+    pub pc: u16,
+    pub sp: u16,
 }
 
 impl Register {
+    pub fn new() -> Register {
+        Register {
+            a: 0,
+            b: 0,
+            c: 0,
+            d: 0,
+            e: 0,
+            h: 0,
+            l: 0,
+            f: 0,
+            pc: 0,
+            sp: 0
+        }
+    }
+
     pub fn bc(&self) -> u16 {
         hi_lo_combine(self.b, self.c)
     }
