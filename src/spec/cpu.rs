@@ -1,13 +1,12 @@
 use crate::spec::register::{Register};
 use crate::dasm::{Disassembler, InstructionData};
 use crate::spec::clock::Clock;
-use crate::spec::mmu::MMU;
 
 pub struct CPU {
     registers: Register,
-    mmu: MMU
 }
 
+#[derive(Debug)]
 pub enum Error {
     Default(String),
     InitializationError
@@ -24,15 +23,9 @@ impl CPU {
         unimplemented!()
     }
 
-    pub fn new(rom: &[u8]) -> Result<CPU, Error> {
-        let mmu = match MMU::new(rom) {
-            Ok(mmu) => mmu,
-            _ => return Err(Error::InitializationError)
-        };
-
+    pub fn new() -> Result<CPU, Error> {
         Ok(
             CPU {
-                mmu,
                 registers: Register::new()
             }
         )

@@ -22,5 +22,6 @@ fn main() {
     // };
     //
     // fs::write("testbed/output", disassembly).unwrap_or_else(|_| panic!("Couldnt write file"));
-    let cpu = spec::cpu::CPU::new(&rom).unwrap_or_else(|_| panic!("Something went wrong"));
+    // let cpu = spec::cpu::CPU::new().unwrap_or_else(|_| panic!("Something went wrong"));
+    let gameboy = spec::gameboy::GameBoy::new(&rom).unwrap_or_else(|e| panic!("Failed to initialize GameBoy with the following error: {:?}", e));
 }

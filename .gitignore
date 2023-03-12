@@ -40,3 +40,4 @@ Cargo.lock
 **/*.rs.bk
 .env
 testbed/
+testroms/

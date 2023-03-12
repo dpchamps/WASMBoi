@@ -6,3 +6,4 @@ pub mod register;
 pub mod cpu;
 pub mod mmu;
 pub mod clock;
+pub mod gameboy;

@@ -1,7 +1,10 @@
+#![allow(non_camel_case_types)]
 use crate::util::byte_ops::*;
 use std::str;
 use std::fmt;
+use std::fmt::{Display, Formatter};
 
+#[derive(Debug)]
 pub enum CartridgeError {
     InvalidCartridgeCode,
     InvalidCartridgeRomSize,
@@ -23,56 +26,85 @@ pub mod cartridge_header_address {
 }
 
 pub const GAME_TITLE_LENGTH: usize = 0xF;
-pub type CartridgeType = &'static str;
 
-pub mod cartridge_type {
-    use crate::spec::cartridge_header::CartridgeType;
+#[derive(Debug)]
+pub enum CartridgeType {
+    ROM,
+    MBC1,
+    MBC1_RAM,
+    MBC1_RAM_BAT,
+    MBC2,
+    MBC2_BAT,
+    ROM_RAM,
+    ROM_RAM_BAT,
+    MMM_01,
+    MMM_01_RAM,
+    MMM_01_RAM_BAT,
+    MBC3_TIMER_BAT,
+    MBC3_RAM_TIMER_BAT,
+    MBC3,
+    MBC3_RAM,
+    MBC3_RAM_BAT,
+    MBC4,
+    MBC4_RAM,
+    MBC4_RAM_BAT,
+    MBC5,
+    MBC5_RAM,
+    MBC5_RAM_BAT,
+}
 
-    pub const ROM: CartridgeType = "ROM ONLY";
-    pub const MBC1: CartridgeType = "MBC1";
-    pub const MBC1_RAM: CartridgeType = "MBC1_RAM";
-    pub const MBC1_RAM_BAT: CartridgeType = "MBC1_RAM_BAT";
-    pub const MBC2: CartridgeType = "MBC2";
-    pub const MBC2_BAT: CartridgeType = "MBC2_BAT";
-    pub const ROM_RAM: CartridgeType = "ROM_RAM";
-    pub const ROM_RAM_BAT: CartridgeType = "ROM_RAM_BAT";
-    pub const MMM_01: CartridgeType = "MMM_01";
-    pub const MMM_01_RAM: CartridgeType = "MMM_01_RAM";
-    pub const MMM_01_RAM_BAT: CartridgeType = "MMM_01_RAM_BAT";
-    pub const MBC3_TIMER_BAT: CartridgeType = "MBC3_TIMER_BAT";
-    pub const MBC3_RAM_TIMER_BAT: CartridgeType = "MBC3_RAM_TIMER_BAT";
-    pub const MBC3: CartridgeType = "MBC3";
-    pub const MBC3_RAM: CartridgeType = "MBC3_RAM";
-    pub const MBC3_RAM_BAT: CartridgeType = "MBC3_RAM_BAT";
-    pub const MBC4: CartridgeType = "MBC4";
-    pub const MBC4_RAM: CartridgeType = "MBC4_RAM";
-    pub const MBC4_RAM_BAT: CartridgeType = "MBC4_RAM_BAT";
-    pub const MBC5: CartridgeType = "MBC5";
-    pub const MBC5_RAM: CartridgeType = "MBC5_RAM";
-    pub const MBC5_RAM_BAT: CartridgeType = "MBC5_RAM_BAT";
+impl Display for CartridgeType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let str = match self {
+            CartridgeType::ROM => "ROM ONLY",
+            CartridgeType::MBC1 => "MBC1",
+            CartridgeType::MBC1_RAM => "MBC1_RAM",
+            CartridgeType::MBC1_RAM_BAT => "MBC1_RAM_BAT",
+            CartridgeType::MBC2 => "MBC2",
+            CartridgeType::MBC2_BAT => "MBC2_BAT",
+            CartridgeType::ROM_RAM => "ROM_RAM",
+            CartridgeType::ROM_RAM_BAT => "ROM_RAM_BAT",
+            CartridgeType::MMM_01 => "MMM_01",
+            CartridgeType::MMM_01_RAM => "MMM_01_RAM",
+            CartridgeType::MMM_01_RAM_BAT => "MMM_01_RAM_BAT",
+            CartridgeType::MBC3_TIMER_BAT => "MBC3_TIMER_BAT",
+            CartridgeType::MBC3_RAM_TIMER_BAT => "MBC3_RAM_TIMER_BAT",
+            CartridgeType::MBC3 => "MBC3",
+            CartridgeType::MBC3_RAM => "MBC3_RAM",
+            CartridgeType::MBC3_RAM_BAT => "MBC3_RAM_BAT",
+            CartridgeType::MBC4 => "MBC4",
+            CartridgeType::MBC4_RAM => "MBC4_RAM",
+            CartridgeType::MBC4_RAM_BAT => "MBC4_RAM_BAT",
+            CartridgeType::MBC5 => "MBC5",
+            CartridgeType::MBC5_RAM => "MBC5_RAM",
+            CartridgeType::MBC5_RAM_BAT => "MBC5_RAM_BAT",
+        };
+
+        write!(f, "{}", str)
+    }
 }
 
 pub fn lookup_cartridge_type(input: u8) -> Result<CartridgeType, CartridgeError> {
     match input {
-        0x0 => Ok(cartridge_type::ROM),
-        0x1 => Ok(cartridge_type::MBC1),
-        0x2 => Ok(cartridge_type::MBC1_RAM),
-        0x3 => Ok(cartridge_type::MBC1_RAM_BAT),
-        0x5 => Ok(cartridge_type::MBC2),
-        0x6 => Ok(cartridge_type::MBC2_BAT),
-        0x8 => Ok(cartridge_type::ROM_RAM),
-        0x9 => Ok(cartridge_type::ROM_RAM_BAT),
-        0xB => Ok(cartridge_type::MMM_01),
-        0xC => Ok(cartridge_type::MMM_01_RAM),
-        0xD => Ok(cartridge_type::MMM_01_RAM_BAT),
-        0xF => Ok(cartridge_type::MBC3_TIMER_BAT),
-        0x10 => Ok(cartridge_type::MBC3_RAM_TIMER_BAT),
-        0x11 => Ok(cartridge_type::MBC3),
-        0x12 => Ok(cartridge_type::MBC3_RAM),
-        0x13 => Ok(cartridge_type::MBC3_RAM_BAT),
-        0x19 => Ok(cartridge_type::MBC5),
-        0x1A => Ok(cartridge_type::MBC5_RAM),
-        0x1B => Ok(cartridge_type::MBC5_RAM_BAT),
+        0x0 => Ok(CartridgeType::ROM),
+        0x1 => Ok(CartridgeType::MBC1),
+        0x2 => Ok(CartridgeType::MBC1_RAM),
+        0x3 => Ok(CartridgeType::MBC1_RAM_BAT),
+        0x5 => Ok(CartridgeType::MBC2),
+        0x6 => Ok(CartridgeType::MBC2_BAT),
+        0x8 => Ok(CartridgeType::ROM_RAM),
+        0x9 => Ok(CartridgeType::ROM_RAM_BAT),
+        0xB => Ok(CartridgeType::MMM_01),
+        0xC => Ok(CartridgeType::MMM_01_RAM),
+        0xD => Ok(CartridgeType::MMM_01_RAM_BAT),
+        0xF => Ok(CartridgeType::MBC3_TIMER_BAT),
+        0x10 => Ok(CartridgeType::MBC3_RAM_TIMER_BAT),
+        0x11 => Ok(CartridgeType::MBC3),
+        0x12 => Ok(CartridgeType::MBC3_RAM),
+        0x13 => Ok(CartridgeType::MBC3_RAM_BAT),
+        0x19 => Ok(CartridgeType::MBC5),
+        0x1A => Ok(CartridgeType::MBC5_RAM),
+        0x1B => Ok(CartridgeType::MBC5_RAM_BAT),
         _ => Err(CartridgeError::InvalidCartridgeCode),
     }
 }
@@ -117,12 +149,12 @@ impl fmt::Display for Cartridge {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Title: {}\nCartridge Type: {}\nStart Address: {}\nRom Size: {}\nRam Size: {}",
+            "Title: {}\nCartridge Type: {}\nStart Address: {:X}\nRom Size: {}kB\nRam Size: {}kB\n",
             self.game_title,
             self.cartridge_type,
             self.start_address,
             self.rom_size,
-            self.ram_size
+            self.ram_size,
         )
     }
 }
@@ -171,7 +203,7 @@ impl Cartridge {
 
 #[cfg(test)]
 mod cartridge_header_test {
-    use crate::spec::cartridge_header::{cartridge_type, Cartridge};
+    use crate::spec::cartridge_header::{Cartridge, CartridgeType};
     use crate::*;
     use std::fs;
 
@@ -236,7 +268,7 @@ mod cartridge_header_test {
     fn cartridge_type() {
         let cartridge = get_cartridge();
 
-        assert_eq!(cartridge.cartridge_type, cartridge_type::MBC5_RAM_BAT)
+        assert_eq!(cartridge.cartridge_type, CartridgeType::MBC5_RAM_BAT)
     }
 
     #[test]
