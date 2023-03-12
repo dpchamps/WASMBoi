@@ -130,7 +130,7 @@ pub enum Instruction {
     RST,
 
     //Debug
-    UNIMPLEMENTED
+    UNIMPLEMENTED,
 }
 
 impl Instruction {

@@ -1,13 +1,13 @@
+use crate::format_byte;
 use crate::spec::cartridge_header::{Cartridge, CartridgeError};
 use crate::spec::mnemonic::{mnemonic, mnemonic_lookup, MnemonicValue};
 use crate::spec::opcode::{instruction_lookup, Instruction};
-use crate::spec::register::{Register};
+use crate::spec::register::Register;
 use crate::util::byte_ops::hi_lo_combine;
-use crate::{format_byte};
 
+use crate::dasm::decoder::decode;
 use std::collections::HashSet;
 use std::fmt;
-use crate::dasm::decoder::decode;
 
 pub mod decode_ld;
 pub mod decoder;
@@ -39,7 +39,7 @@ impl fmt::Display for InstructionData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match decoder::decode(self) {
             Ok(s) => write!(f, "{}", s),
-            Err(e) => Err(fmt::Error)
+            Err(e) => Err(fmt::Error),
         }
     }
 }
@@ -63,11 +63,11 @@ impl Disassembler {
     pub fn get_instruction_data(
         byte: &u8,
         idx: &u16,
-        buffer: &[u8]
+        buffer: &[u8],
     ) -> Result<InstructionData, DasmError> {
         let instruction = match instruction_lookup(&byte) {
             Ok(instruction) => instruction,
-            _ => Instruction::UNIMPLEMENTED
+            _ => Instruction::UNIMPLEMENTED,
         };
 
         let size = Instruction::get_size(&instruction);
@@ -91,7 +91,7 @@ impl Disassembler {
             _ => {
                 // println!("{}", format!("Failed to disassemble instruction {}. Defaulting to NOP", format_byte!(byte)));
                 Instruction::NOP
-            },
+            }
         };
 
         let size = Instruction::get_size(&instruction);
@@ -106,16 +106,19 @@ impl Disassembler {
     }
 }
 
-
 fn trace(dasm: &mut Disassembler) -> Result<(Vec<Vec<String>>), DasmError> {
-    let mut paths : Vec<Vec<String>> = Vec::new();
+    let mut paths: Vec<Vec<String>> = Vec::new();
 
     while dasm.branches.len() > 0 {
-        let mut path : Vec<String> = Vec::new();
+        let mut path: Vec<String> = Vec::new();
 
         let head = match dasm.branches.pop() {
             Some(result) => result,
-            _ => return Err(DasmError::InvalidRom("Failed to pop a branch. Something terrible happened".to_owned())),
+            _ => {
+                return Err(DasmError::InvalidRom(
+                    "Failed to pop a branch. Something terrible happened".to_owned(),
+                ))
+            }
         };
 
         let mut idx: usize = head as usize;
@@ -128,7 +131,9 @@ fn trace(dasm: &mut Disassembler) -> Result<(Vec<Vec<String>>), DasmError> {
             //     dasm.labels.contains(&(idx as u16)),
             //     dasm.visited.contains(&(idx as u16))
             // );
-            if idx > dasm.buffer.len() || (dasm.labels.contains(&(idx as u16) ) && dasm.visited.contains(&(idx as u16))) {
+            if idx > dasm.buffer.len()
+                || (dasm.labels.contains(&(idx as u16)) && dasm.visited.contains(&(idx as u16)))
+            {
                 break 'inner;
             }
 
@@ -146,10 +151,15 @@ fn trace(dasm: &mut Disassembler) -> Result<(Vec<Vec<String>>), DasmError> {
 
             idx += 1 + instruction_data.size;
 
-
             if Instruction::is_branch(&instruction_data.instruction) {
-                let next_address = hi_lo_combine(instruction_data.data[1], instruction_data.data[0]);
-                println!("Next Address: {}, from: {}, {}", next_address, instruction_data.byte, dasm.buffer[idx+1]);
+                let next_address =
+                    hi_lo_combine(instruction_data.data[1], instruction_data.data[0]);
+                println!(
+                    "Next Address: {}, from: {}, {}",
+                    next_address,
+                    instruction_data.byte,
+                    dasm.buffer[idx + 1]
+                );
                 dasm.labels.insert(next_address);
 
                 if Instruction::is_call(&instruction_data.instruction) {
@@ -167,7 +177,6 @@ fn trace(dasm: &mut Disassembler) -> Result<(Vec<Vec<String>>), DasmError> {
         paths.push(path);
     }
     println!("Finished outer loop");
-
 
     Ok(paths)
 }
@@ -188,7 +197,6 @@ pub fn disassemble(rom: &Vec<u8>) -> Result<String, DasmError> {
         }
         disassembly.push_str("\n;--\n");
     }
-
 
     println!("Done everything");
 

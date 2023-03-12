@@ -1,10 +1,10 @@
 use crate::spec::cartridge_header::{Cartridge, CartridgeError};
-use crate::spec::cpu::{CPU, Error as CpuError};
-use crate::spec::mmu::{MMU, Error as MmuError};
+use crate::spec::cpu::{Error as CpuError, CPU};
+use crate::spec::mmu::{Error as MmuError, MMU};
 
 pub struct GameBoy {
     cpu: CPU,
-    mmu: MMU
+    mmu: MMU,
 }
 
 #[derive(Debug)]
@@ -12,7 +12,7 @@ pub enum GameBoyError {
     Unknown,
     Cpu(CpuError),
     Mmu(MmuError),
-    Cartridge(CartridgeError)
+    Cartridge(CartridgeError),
 }
 
 impl Default for GameBoyError {
@@ -50,10 +50,7 @@ impl GameBoy {
         let mmu = MMU::new(rom, &cartridge.cartridge_type)?;
         println!("OK");
 
-        Ok(GameBoy {
-            cpu,
-            mmu
-        })
+        Ok(GameBoy { cpu, mmu })
     }
 
     pub fn cycle() -> Result<(), GameBoyError> {

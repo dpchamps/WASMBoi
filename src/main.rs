@@ -5,9 +5,9 @@ mod dasm;
 mod spec;
 mod util;
 
-use std::fs;
-use std::env;
 use crate::spec::cpu::CPU;
+use std::env;
+use std::fs;
 
 fn main() {
     let rom_location = env::var("ROM").unwrap();
@@ -23,5 +23,10 @@ fn main() {
     //
     // fs::write("testbed/output", disassembly).unwrap_or_else(|_| panic!("Couldnt write file"));
     // let cpu = spec::cpu::CPU::new().unwrap_or_else(|_| panic!("Something went wrong"));
-    let gameboy = spec::gameboy::GameBoy::new(&rom).unwrap_or_else(|e| panic!("Failed to initialize GameBoy with the following error: {:?}", e));
+    let gameboy = spec::gameboy::GameBoy::new(&rom).unwrap_or_else(|e| {
+        panic!(
+            "Failed to initialize GameBoy with the following error: {:?}",
+            e
+        )
+    });
 }

@@ -52,7 +52,7 @@ impl Register {
             l: 0,
             f: 0,
             pc: 0,
-            sp: 0
+            sp: 0,
         }
     }
 
@@ -72,7 +72,7 @@ impl Register {
         hi_lo_combine(self.a, self.f)
     }
 
-    pub fn lookup_register(input: u8) -> Result<RegisterValue, RegisterError>{
+    pub fn lookup_register(input: u8) -> Result<RegisterValue, RegisterError> {
         match input {
             0b111 => Ok(decoded_register::A),
             0b000 => Ok(decoded_register::B),
@@ -102,5 +102,3 @@ impl Register {
         }
     }
 }
-
-

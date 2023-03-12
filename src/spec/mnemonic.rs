@@ -175,6 +175,6 @@ pub fn mnemonic_lookup(instruction: &Instruction) -> MnemonicValue {
 
         Instruction::RST => mnemonic::RST,
 
-        Instruction::UNIMPLEMENTED => mnemonic::UNIMPLEMENTED
+        Instruction::UNIMPLEMENTED => mnemonic::UNIMPLEMENTED,
     }
 }

@@ -1,8 +1,8 @@
 #![allow(non_camel_case_types)]
 use crate::util::byte_ops::*;
-use std::str;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use std::str;
 
 #[derive(Debug)]
 pub enum CartridgeError {
@@ -150,11 +150,7 @@ impl fmt::Display for Cartridge {
         write!(
             f,
             "Title: {}\nCartridge Type: {}\nStart Address: {:X}\nRom Size: {}kB\nRam Size: {}kB\n",
-            self.game_title,
-            self.cartridge_type,
-            self.start_address,
-            self.rom_size,
-            self.ram_size,
+            self.game_title, self.cartridge_type, self.start_address, self.rom_size, self.ram_size,
         )
     }
 }

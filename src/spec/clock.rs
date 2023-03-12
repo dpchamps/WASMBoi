@@ -1,3 +1,1 @@
-pub struct Clock {
-
-}
+pub struct Clock {}
