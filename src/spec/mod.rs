@@ -7,3 +7,5 @@ pub mod mmu;
 pub mod mnemonic;
 pub mod opcode;
 pub mod register;
+
+mod opcodes;

@@ -27,6 +27,7 @@ pub mod decoded_register {
     pub const HLD: RegisterValue = "(HLD)";
 }
 
+#[derive(Default)]
 pub struct Register {
     a: u8,
     b: u8,
@@ -42,18 +43,7 @@ pub struct Register {
 
 impl Register {
     pub fn new() -> Register {
-        Register {
-            a: 0,
-            b: 0,
-            c: 0,
-            d: 0,
-            e: 0,
-            h: 0,
-            l: 0,
-            f: 0,
-            pc: 0,
-            sp: 0,
-        }
+        Register::default()
     }
 
     pub fn bc(&self) -> u16 {

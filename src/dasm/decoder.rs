@@ -1,5 +1,4 @@
 use crate::dasm::InstructionData;
-use crate::spec::mnemonic::{mnemonic, mnemonic_lookup};
 use crate::spec::opcode::Instruction;
 use crate::spec::opcode::CB_PREFIX;
 use crate::spec::register::decoded_register::HLI;
@@ -7,6 +6,7 @@ use crate::spec::register::{decoded_register, Register};
 use crate::util::byte_ops::{extract_lhs, extract_rhs};
 
 use crate::dasm::decode_ld;
+use crate::spec::mnemonic::Mnemonic;
 
 #[macro_export]
 macro_rules! format_args {
@@ -56,12 +56,14 @@ pub fn extract_ld_register(register_code: u8) -> Result<&'static str, &'static s
     }
 }
 
-pub fn decode(instruction_data: &InstructionData) -> Result<String, &'static str> {
-    let mnemonic_value = mnemonic_lookup(&instruction_data.instruction);
+pub fn decode(
+    instruction_data: &InstructionData,
+    opcode_data: &[u8],
+) -> Result<String, String> {
 
-    match mnemonic_value {
-        mnemonic::LD => decode_ld::decode(instruction_data),
-        _ => return Err(mnemonic_value),
+    match instruction_data.mnemonic {
+        Mnemonic::LD => decode_ld::decode(instruction_data, opcode_data),
+        _ => return Err(String::from(&instruction_data.mnemonic)),
     }
 }
 

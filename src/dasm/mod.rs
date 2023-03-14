@@ -1,13 +1,14 @@
 use crate::format_byte;
 use crate::spec::cartridge_header::{Cartridge, CartridgeError};
-use crate::spec::mnemonic::{mnemonic, mnemonic_lookup, MnemonicValue};
 use crate::spec::opcode::{instruction_lookup, Instruction};
 use crate::spec::register::Register;
 use crate::util::byte_ops::hi_lo_combine;
 
 use crate::dasm::decoder::decode;
 use std::collections::HashSet;
+use std::convert::TryFrom;
 use std::fmt;
+use crate::spec::mnemonic::Mnemonic;
 
 pub mod decode_ld;
 pub mod decoder;
@@ -32,15 +33,33 @@ pub struct InstructionData {
     pub byte: u8,
     pub size: usize,
     pub instruction: Instruction,
-    pub data: Vec<u8>,
+    pub mnemonic: Mnemonic
+}
+
+impl TryFrom<u8> for InstructionData {
+    type Error = DasmError;
+
+    fn try_from(byte: u8) -> Result<Self, Self::Error> {
+        let instruction = match instruction_lookup(byte) {
+            Ok(instruction) => instruction,
+            _ => Instruction::UNIMPLEMENTED,
+        };
+        let mnemonic = Mnemonic::from(&instruction);
+
+        let size = Instruction::get_size(&instruction);
+
+        Ok(InstructionData {
+            byte,
+            instruction,
+            size,
+            mnemonic
+        })
+    }
 }
 
 impl fmt::Display for InstructionData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match decoder::decode(self) {
-            Ok(s) => write!(f, "{}", s),
-            Err(e) => Err(fmt::Error),
-        }
+        write!(f, "{:#X}: {:?} (size: {})", self.byte, self.instruction, self.size)
     }
 }
 
@@ -60,30 +79,26 @@ impl Disassembler {
         })
     }
 
-    pub fn get_instruction_data(
-        byte: &u8,
-        idx: &u16,
-        buffer: &[u8],
-    ) -> Result<InstructionData, DasmError> {
-        let instruction = match instruction_lookup(&byte) {
+    pub fn get_instruction_data(byte: u8) -> Result<InstructionData, DasmError> {
+        let instruction = match instruction_lookup(byte) {
             Ok(instruction) => instruction,
             _ => Instruction::UNIMPLEMENTED,
         };
+        let mnemonic = Mnemonic::from(&instruction);
 
         let size = Instruction::get_size(&instruction);
-        let data: Vec<u8> = buffer[(*idx as usize)..(*idx as usize) + size].to_vec();
 
         Ok(InstructionData {
-            byte: byte.clone(),
+            byte,
             instruction,
-            data,
             size,
+            mnemonic
         })
     }
 
     pub fn extract_instruction_data(
         &self,
-        byte: &u8,
+        byte: u8,
         idx: usize,
     ) -> Result<InstructionData, DasmError> {
         let instruction = match instruction_lookup(byte) {
@@ -95,18 +110,18 @@ impl Disassembler {
         };
 
         let size = Instruction::get_size(&instruction);
-        let data: Vec<u8> = self.buffer[idx..idx + size].to_vec();
+        let mnemonic = Mnemonic::from(&instruction);
 
         Ok(InstructionData {
-            byte: byte.clone(),
+            byte,
             instruction,
-            data,
             size,
+            mnemonic,
         })
     }
 }
 
-fn trace(dasm: &mut Disassembler) -> Result<(Vec<Vec<String>>), DasmError> {
+fn trace(dasm: &mut Disassembler) -> Result<Vec<Vec<String>>, DasmError> {
     let mut paths: Vec<Vec<String>> = Vec::new();
 
     while dasm.branches.len() > 0 {
@@ -139,21 +154,20 @@ fn trace(dasm: &mut Disassembler) -> Result<(Vec<Vec<String>>), DasmError> {
 
             dasm.visited.insert(idx as u16);
 
-            let instruction_data = dasm.extract_instruction_data(&dasm.buffer[idx], idx)?;
-            let decoded = match decoder::decode(&instruction_data) {
+            let instruction_data = dasm.extract_instruction_data(dasm.buffer[idx], idx)?;
+            let opcode_data = &(dasm.buffer)[idx..idx + instruction_data.size];
+            let decoded = match decoder::decode(&instruction_data, opcode_data) {
                 Ok(decoded) => decoded,
                 // Err(message) => return Err(DasmError::DecoderError(message)),
                 Err(message) => message.to_string(),
             };
+            println!("idx: {}, {:?} ->\t {}", idx, instruction_data, &decoded);
             path.push(decoded);
-
-            println!("idx: {}, {:?}", idx, instruction_data);
 
             idx += 1 + instruction_data.size;
 
             if Instruction::is_branch(&instruction_data.instruction) {
-                let next_address =
-                    hi_lo_combine(instruction_data.data[1], instruction_data.data[0]);
+                let next_address = hi_lo_combine(opcode_data[1], opcode_data[0]);
                 println!(
                     "Next Address: {}, from: {}, {}",
                     next_address,

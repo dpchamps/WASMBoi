@@ -8,7 +8,7 @@ pub enum OpcodeError {
 
 type OpcodeLookupResult = Result<Instruction, OpcodeError>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Instruction {
     //8 BIT LOAD
     LD_RR,
@@ -271,7 +271,7 @@ impl Instruction {
     }
 }
 
-pub fn cb_prefix_instruction_lookup(byte: &u8) -> OpcodeLookupResult {
+pub fn cb_prefix_instruction_lookup(byte: u8) -> OpcodeLookupResult {
     match byte {
         0x0 => Ok(Instruction::RLC_R),
         0x1 => Ok(Instruction::RLC_R),
@@ -529,11 +529,10 @@ pub fn cb_prefix_instruction_lookup(byte: &u8) -> OpcodeLookupResult {
         0xFD => Ok(Instruction::SET_NR),
         0xFE => Ok(Instruction::SET_NHL),
         0xFF => Ok(Instruction::SET_NR),
-        _ => Err(OpcodeError::InvalidOpcodeInput),
     }
 }
 
-pub fn instruction_lookup(byte: &u8) -> OpcodeLookupResult {
+pub fn instruction_lookup(byte: u8) -> OpcodeLookupResult {
     match byte {
         0x0 => Ok(Instruction::NOP),
         0x1 => Ok(Instruction::LD_RRNN),

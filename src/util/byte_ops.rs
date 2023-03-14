@@ -1,6 +1,6 @@
-#[allow(exceeding_bitshifts)]
+#[allow(arithmetic_overflow)]
 pub fn left_shift(b: u8) -> u16 {
-    ((b as u16) << 8)
+    (b as u16) << 8
 }
 
 const LHS_MASK: u8 = 0b00111000;
@@ -17,7 +17,7 @@ pub fn extract_lhs(byte: u8) -> u8 {
 }
 
 pub fn extract_rhs(byte: u8) -> u8 {
-    (byte & RHS_MASK)
+    byte & RHS_MASK
 }
 
 #[cfg(test)]

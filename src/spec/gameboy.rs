@@ -1,9 +1,9 @@
 use crate::spec::cartridge_header::{Cartridge, CartridgeError};
-use crate::spec::cpu::{Error as CpuError, CPU};
+use crate::spec::cpu::{Error as CpuError, CPUImpl, CPU};
 use crate::spec::mmu::{Error as MmuError, MMU};
 
 pub struct GameBoy {
-    cpu: CPU,
+    cpu: CPUImpl,
     mmu: MMU,
 }
 
@@ -45,7 +45,7 @@ impl GameBoy {
         let cartridge = Cartridge::new(rom)?;
         println!("---\n{}\n---", cartridge);
         println!("Initializing Z80 CPU");
-        let cpu = CPU::new()?;
+        let cpu = CPUImpl::new()?;
         println!("Initializing MMU");
         let mmu = MMU::new(rom, &cartridge.cartridge_type)?;
         println!("OK");
@@ -53,7 +53,13 @@ impl GameBoy {
         Ok(GameBoy { cpu, mmu })
     }
 
-    pub fn cycle() -> Result<(), GameBoyError> {
-        Ok(())
+    pub fn cycle(&mut self) -> Result<(), GameBoyError> {
+        self.cpu.tick(&mut self.mmu).map_err(|x| GameBoyError::Cpu(x))
+    }
+
+    pub fn start(&mut self) -> Result<(), GameBoyError> {
+        loop {
+            self.cycle()?
+        }
     }
 }
