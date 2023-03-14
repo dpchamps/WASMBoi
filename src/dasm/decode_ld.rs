@@ -9,16 +9,17 @@ use crate::util::byte_ops::{extract_lhs, extract_rhs};
 use crate::spec::opcode::Instruction;
 use crate::spec::register::decoded_register;
 
-pub fn decode(
-    instruction_data: &InstructionData,
-    opcode_data: &[u8],
-) -> Result<String, String> {
+pub fn decode(instruction_data: &InstructionData, opcode_data: &[u8]) -> Result<String, String> {
     match instruction_data.instruction {
         Instruction::LD_RR => {
             let lhs_register = extract_register(extract_lhs(instruction_data.byte))?;
             let rhs_register = extract_register(extract_rhs(instruction_data.byte))?;
 
-            Ok(format_instruction!(Mnemonic::LD, lhs_register, rhs_register))
+            Ok(format_instruction!(
+                Mnemonic::LD,
+                lhs_register,
+                rhs_register
+            ))
         }
         Instruction::LD_RN => {
             let lhs_register = extract_register(extract_lhs(instruction_data.byte))?;
@@ -29,12 +30,20 @@ pub fn decode(
         Instruction::LD_RHL => {
             let lhs_register = extract_register(extract_lhs(instruction_data.byte))?;
 
-            Ok(format_instruction!(Mnemonic::LD, lhs_register, decoded_register::HL))
+            Ok(format_instruction!(
+                Mnemonic::LD,
+                lhs_register,
+                decoded_register::HL
+            ))
         }
         Instruction::LD_HLR => {
             let rhs_register = extract_register(extract_rhs(instruction_data.byte))?;
 
-            Ok(format_instruction!(Mnemonic::LD, decoded_register::HL, rhs_register))
+            Ok(format_instruction!(
+                Mnemonic::LD,
+                decoded_register::HL,
+                rhs_register
+            ))
         }
         Instruction::LD_HLN => Ok(format_instruction!(
             Mnemonic::LD,
@@ -146,7 +155,7 @@ mod decode_ld_test {
             byte,
             size: data.len(),
             instruction,
-            mnemonic
+            mnemonic,
         }
     }
 

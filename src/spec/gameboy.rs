@@ -1,5 +1,5 @@
 use crate::spec::cartridge_header::{Cartridge, CartridgeError};
-use crate::spec::cpu::{Error as CpuError, CPUImpl, CPU};
+use crate::spec::cpu::{CPUImpl, Error as CpuError, CPU};
 use crate::spec::mmu::{Error as MmuError, MMU};
 
 pub struct GameBoy {
@@ -54,7 +54,9 @@ impl GameBoy {
     }
 
     pub fn cycle(&mut self) -> Result<(), GameBoyError> {
-        self.cpu.tick(&mut self.mmu).map_err(|x| GameBoyError::Cpu(x))
+        self.cpu
+            .tick(&mut self.mmu)
+            .map_err(|x| GameBoyError::Cpu(x))
     }
 
     pub fn start(&mut self) -> Result<(), GameBoyError> {

@@ -56,11 +56,7 @@ pub fn extract_ld_register(register_code: u8) -> Result<&'static str, &'static s
     }
 }
 
-pub fn decode(
-    instruction_data: &InstructionData,
-    opcode_data: &[u8],
-) -> Result<String, String> {
-
+pub fn decode(instruction_data: &InstructionData, opcode_data: &[u8]) -> Result<String, String> {
     match instruction_data.mnemonic {
         Mnemonic::LD => decode_ld::decode(instruction_data, opcode_data),
         _ => return Err(String::from(&instruction_data.mnemonic)),

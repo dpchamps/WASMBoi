@@ -1,14 +1,16 @@
 #![allow(non_camel_case_types)]
 
-use std::fmt::{Display, Formatter};
 use crate::spec::opcode::Instruction;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub enum Mnemonic {
     LD,
     LDHL,
+
     PUSH,
     POP,
+
     ADD,
     ADC,
     SUB,
@@ -21,6 +23,7 @@ pub enum Mnemonic {
     DEC,
     DAA,
     CPL,
+
     RLCA,
     RLA,
     RRCA,
@@ -33,9 +36,11 @@ pub enum Mnemonic {
     SWAP,
     SRA,
     SRL,
+
     BIT,
     SET,
     RES,
+
     CCF,
     SCF,
     NOP,
@@ -43,6 +48,7 @@ pub enum Mnemonic {
     STOP,
     DI,
     EI,
+
     JP,
     JR,
     CALL,
@@ -51,7 +57,8 @@ pub enum Mnemonic {
     RST,
     DB,
     DW,
-    UNIMPLEMENTED
+
+    UNIMPLEMENTED,
 }
 
 impl From<&Mnemonic> for String {
@@ -235,7 +242,6 @@ impl From<&Instruction> for Mnemonic {
             Instruction::RST => Mnemonic::RST,
 
             Instruction::UNIMPLEMENTED => Mnemonic::UNIMPLEMENTED,
-        } 
+        };
     }
 }
-

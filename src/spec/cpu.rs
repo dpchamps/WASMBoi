@@ -1,11 +1,11 @@
 use crate::dasm::{DasmError, Disassembler, InstructionData};
 use crate::spec::clock::Clock;
 use crate::spec::mmu::{Error as MmuError, MMU};
-use crate::spec::register::Register;
-use std::convert::TryFrom;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::*;
+use crate::spec::register::Register;
+use std::convert::TryFrom;
 
 pub trait CPU {
     type E;
@@ -20,6 +20,7 @@ pub struct CPUImpl {
 pub enum Error {
     Default(String),
     InitializationError,
+    UnexpectedOpcode(String),
     UnsupportedOpcode(Instruction),
     MmuReadError(MmuError),
     DecodeError(DasmError),
@@ -34,7 +35,7 @@ impl CPU for CPUImpl {
         let data = [
             mmu.read_byte(self.registers.pc)
                 .map_err(|x| Error::MmuReadError(x))?,
-            mmu.read_byte(self.registers.pc+1)
+            mmu.read_byte(self.registers.pc + 1)
                 .map_err(|x| Error::MmuReadError(x))?,
         ];
 
@@ -69,11 +70,58 @@ impl CPUImpl {
         InstructionData::try_from(op).map_err(|x| Error::DecodeError(x))
     }
 
-    fn execute(&mut self, instruction_data: &InstructionData, opcode_data: &[u8; 2]) -> Result<Clock, Error> {
+    fn execute(
+        &mut self,
+        instruction_data: &InstructionData,
+        opcode_data: &[u8; 2],
+    ) -> Result<Clock, Error> {
         println!("{}", instruction_data);
         match instruction_data.mnemonic {
-            Mnemonic::LD => self.evaluate_ld(instruction_data, opcode_data),
-            _ => Err(Error::UnsupportedOpcode(instruction_data.instruction.clone()))
+            Mnemonic::LD | Mnemonic::LDHL => self.evaluate_ld(instruction_data, opcode_data),
+            Mnemonic::PUSH | Mnemonic::POP => self.evaluate_stack_op(instruction_data, opcode_data),
+            Mnemonic::ADD
+            | Mnemonic::ADC
+            | Mnemonic::SUB
+            | Mnemonic::SBC
+            | Mnemonic::AND
+            | Mnemonic::XOR
+            | Mnemonic::OR
+            | Mnemonic::CP
+            | Mnemonic::INC
+            | Mnemonic::DEC
+            | Mnemonic::DAA
+            | Mnemonic::CPL => self.evaluate_alu(instruction_data, opcode_data),
+            Mnemonic::RLCA
+            | Mnemonic::RLA
+            | Mnemonic::RRCA
+            | Mnemonic::RRA
+            | Mnemonic::RLC
+            | Mnemonic::RL
+            | Mnemonic::RRC
+            | Mnemonic::RR
+            | Mnemonic::SLA
+            | Mnemonic::SWAP
+            | Mnemonic::SRA
+            | Mnemonic::SRL => self.evaluate_bitwise(instruction_data, opcode_data),
+            Mnemonic::CCF
+            | Mnemonic::SCF
+            | Mnemonic::NOP
+            | Mnemonic::HALT
+            | Mnemonic::STOP
+            | Mnemonic::DI
+            | Mnemonic::EI => self.evaluate_control(instruction_data, opcode_data),
+            Mnemonic::JP
+            | Mnemonic::JR
+            | Mnemonic::CALL
+            | Mnemonic::RET
+            | Mnemonic::RETI
+            | Mnemonic::RST
+            | Mnemonic::DB
+            | Mnemonic::DW => self.evaluate_branch(instruction_data, opcode_data),
+            Mnemonic::UNIMPLEMENTED => Ok(Clock::default()),
+            _ => Err(Error::UnsupportedOpcode(
+                instruction_data.instruction.clone(),
+            )),
         }
     }
 

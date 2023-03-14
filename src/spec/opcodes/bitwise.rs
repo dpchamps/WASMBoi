@@ -1,81 +1,96 @@
 use crate::dasm::InstructionData;
 use crate::spec::clock::Clock;
-use crate::spec::cpu::*;
+use crate::spec::cpu::{CPUImpl, Error};
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 
 impl CPUImpl {
-    pub(crate) fn evaluate_ld(
+    pub(crate) fn evaluate_bitwise(
         &mut self,
         instruction_data: &InstructionData,
         opcode_data: &[u8; 2],
     ) -> Result<Clock, Error> {
         match instruction_data.instruction {
-            Instruction::LD_RR => {
+            Instruction::RLCA => {
                 unimplemented!()
             }
-            Instruction::LD_RN => {
+            Instruction::RLA => {
                 unimplemented!()
             }
-            Instruction::LD_RHL => {
+            Instruction::RRCA => {
                 unimplemented!()
             }
-            Instruction::LD_HLR => {
+            Instruction::RRA => {
                 unimplemented!()
             }
-            Instruction::LD_HLN => {
+            Instruction::RLC_R => {
                 unimplemented!()
             }
-            Instruction::LD_ABC => {
+            Instruction::RLC_HL => {
                 unimplemented!()
             }
-            Instruction::LD_ADE => {
+            Instruction::RL_R => {
                 unimplemented!()
             }
-            Instruction::LD_AN => {
+            Instruction::RL_HL => {
                 unimplemented!()
             }
-            Instruction::LD_ANN => {
+            Instruction::RRC_R => {
                 unimplemented!()
             }
-            Instruction::LD_BCA => {
+            Instruction::RRC_HL => {
                 unimplemented!()
             }
-            Instruction::LD_DEA => {
+            Instruction::RR_R => {
                 unimplemented!()
             }
-            Instruction::LD_NA => {
+            Instruction::RR_HL => {
                 unimplemented!()
             }
-            Instruction::LD_NNA => {
+            Instruction::SLA_R => {
                 unimplemented!()
             }
-            Instruction::LD_AFF00C => {
+            Instruction::SLA_HL => {
                 unimplemented!()
             }
-            Instruction::LD_FF00CA => {
+            Instruction::SWAP_R => {
                 unimplemented!()
             }
-            Instruction::LD_HLIA => {
+            Instruction::SWAP_HL => {
                 unimplemented!()
             }
-            Instruction::LD_AHLI => {
+            Instruction::SRA_R => {
                 unimplemented!()
             }
-            Instruction::LD_HLDA => {
+            Instruction::SRA_HL => {
                 unimplemented!()
             }
-            Instruction::LD_AHLD => {
+            Instruction::SRL_R => {
                 unimplemented!()
             }
-            Instruction::LD_RRNN => {
+            Instruction::SRL_HL => {
                 unimplemented!()
             }
-            Instruction::LD_SPHL => {
+            Instruction::BIT_NR => {
                 unimplemented!()
             }
-            _ => Err(unexpected_op(&instruction_data.mnemonic, &Mnemonic::LD)),
+            Instruction::BIT_NHL => {
+                unimplemented!()
+            }
+            Instruction::SET_NR => {
+                unimplemented!()
+            }
+            Instruction::SET_NHL => {
+                unimplemented!()
+            }
+            Instruction::RES_NR => {
+                unimplemented!()
+            }
+            Instruction::RES_NHL => {
+                unimplemented!()
+            }
+            _ => Err(unexpected_op(&instruction_data.mnemonic, &Mnemonic::PUSH)),
         }
     }
 }

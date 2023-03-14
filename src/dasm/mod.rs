@@ -5,10 +5,10 @@ use crate::spec::register::Register;
 use crate::util::byte_ops::hi_lo_combine;
 
 use crate::dasm::decoder::decode;
+use crate::spec::mnemonic::Mnemonic;
 use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::fmt;
-use crate::spec::mnemonic::Mnemonic;
 
 pub mod decode_ld;
 pub mod decoder;
@@ -33,7 +33,7 @@ pub struct InstructionData {
     pub byte: u8,
     pub size: usize,
     pub instruction: Instruction,
-    pub mnemonic: Mnemonic
+    pub mnemonic: Mnemonic,
 }
 
 impl TryFrom<u8> for InstructionData {
@@ -52,14 +52,18 @@ impl TryFrom<u8> for InstructionData {
             byte,
             instruction,
             size,
-            mnemonic
+            mnemonic,
         })
     }
 }
 
 impl fmt::Display for InstructionData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:#X}: {:?} (size: {})", self.byte, self.instruction, self.size)
+        write!(
+            f,
+            "{:#X}: {:?} (size: {})",
+            self.byte, self.instruction, self.size
+        )
     }
 }
 
@@ -92,7 +96,7 @@ impl Disassembler {
             byte,
             instruction,
             size,
-            mnemonic
+            mnemonic,
         })
     }
 

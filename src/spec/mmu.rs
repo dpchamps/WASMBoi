@@ -60,7 +60,10 @@ impl MMU {
     }
 
     pub fn read_byte(&self, address: u16) -> Result<u8, Error> {
-        self.rom.get(address as usize).map(|x|*x).ok_or(Error::ReadError)
+        self.rom
+            .get(address as usize)
+            .map(|x| *x)
+            .ok_or(Error::ReadError)
     }
 
     pub fn read_word(&self, address: u16) -> Result<u16, Error> {
