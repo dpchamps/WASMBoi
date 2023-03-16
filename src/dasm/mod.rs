@@ -2,7 +2,7 @@ use crate::format_byte;
 use crate::spec::cartridge_header::{Cartridge, CartridgeError};
 use crate::spec::opcode::{instruction_lookup, Instruction};
 use crate::spec::register::Register;
-use crate::util::byte_ops::hi_lo_combine;
+use crate::util::byte_ops::{extract_lhs, extract_rhs, hi_lo_combine};
 
 use crate::dasm::decoder::decode;
 use crate::spec::mnemonic::Mnemonic;
@@ -29,11 +29,27 @@ pub struct Disassembler {
 }
 
 #[derive(Debug)]
+pub struct ByteData {
+    pub lhs: u8,
+    pub rhs: u8,
+}
+
+impl From<u8> for ByteData {
+    fn from(byte: u8) -> Self {
+        ByteData {
+            lhs: extract_lhs(byte),
+            rhs: extract_rhs(byte)
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct InstructionData {
     pub byte: u8,
     pub size: usize,
     pub instruction: Instruction,
     pub mnemonic: Mnemonic,
+    pub byte_data: ByteData,
 }
 
 impl TryFrom<u8> for InstructionData {
@@ -45,14 +61,15 @@ impl TryFrom<u8> for InstructionData {
             _ => Instruction::UNIMPLEMENTED,
         };
         let mnemonic = Mnemonic::from(&instruction);
-
         let size = Instruction::get_size(&instruction);
+        let byte_data = ByteData::from(byte);
 
         Ok(InstructionData {
             byte,
             instruction,
             size,
             mnemonic,
+            byte_data
         })
     }
 }
@@ -61,8 +78,8 @@ impl fmt::Display for InstructionData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{:#X}: {:?} (size: {})",
-            self.byte, self.instruction, self.size
+            "{:#X}: {:?} (size: {}) {:?}",
+            self.byte, self.instruction, self.size, self.byte_data
         )
     }
 }
@@ -89,14 +106,15 @@ impl Disassembler {
             _ => Instruction::UNIMPLEMENTED,
         };
         let mnemonic = Mnemonic::from(&instruction);
-
         let size = Instruction::get_size(&instruction);
+        let byte_data = ByteData::from(byte);
 
         Ok(InstructionData {
             byte,
             instruction,
             size,
             mnemonic,
+            byte_data,
         })
     }
 
@@ -115,12 +133,14 @@ impl Disassembler {
 
         let size = Instruction::get_size(&instruction);
         let mnemonic = Mnemonic::from(&instruction);
+        let byte_data = ByteData::from(byte);
 
         Ok(InstructionData {
             byte,
             instruction,
             size,
             mnemonic,
+            byte_data
         })
     }
 }

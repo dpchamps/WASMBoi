@@ -9,11 +9,11 @@ use std::convert::TryFrom;
 
 pub trait CPU {
     type E;
-    fn tick(&mut self, mmu: &mut MMU) -> Result<(), Self::E>;
+    fn tick(&mut self, mmu: &mut MMU) -> Result<u8, Self::E>;
 }
 
 pub struct CPUImpl {
-    registers: Register,
+    pub(crate) registers: Register,
 }
 
 #[derive(Debug)]
@@ -29,7 +29,7 @@ pub enum Error {
 impl CPU for CPUImpl {
     type E = Error;
 
-    fn tick(&mut self, mmu: &mut MMU) -> Result<(), Error> {
+    fn tick(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
         let buf: Vec<u8> = Vec::new();
         let opcode = self.fetch(mmu)?;
         let data = [
@@ -39,9 +39,9 @@ impl CPU for CPUImpl {
                 .map_err(|x| Error::MmuReadError(x))?,
         ];
 
-        let timing_info = self.execute(&opcode, &data)?;
+        let cycles = self.execute(&opcode, &data, mmu)?;
 
-        Ok(())
+        Ok(cycles)
     }
 }
 
@@ -74,11 +74,12 @@ impl CPUImpl {
         &mut self,
         instruction_data: &InstructionData,
         opcode_data: &[u8; 2],
-    ) -> Result<Clock, Error> {
-        println!("{}", instruction_data);
-        match instruction_data.mnemonic {
-            Mnemonic::LD | Mnemonic::LDHL => self.evaluate_ld(instruction_data, opcode_data),
-            Mnemonic::PUSH | Mnemonic::POP => self.evaluate_stack_op(instruction_data, opcode_data),
+        mmu: &mut MMU
+    ) -> Result<u8, Error> {
+        println!("PC: {:#X}, Opcode: {}, Data: [{:?}]", self.registers.pc, instruction_data, opcode_data);
+        let result = match instruction_data.mnemonic {
+            Mnemonic::LD | Mnemonic::LDHL => self.evaluate_ld(instruction_data, opcode_data, mmu),
+            Mnemonic::PUSH | Mnemonic::POP => self.evaluate_stack_op(instruction_data, opcode_data, mmu),
             Mnemonic::ADD
             | Mnemonic::ADC
             | Mnemonic::SUB
@@ -90,7 +91,7 @@ impl CPUImpl {
             | Mnemonic::INC
             | Mnemonic::DEC
             | Mnemonic::DAA
-            | Mnemonic::CPL => self.evaluate_alu(instruction_data, opcode_data),
+            | Mnemonic::CPL => self.evaluate_alu(instruction_data, opcode_data, mmu),
             Mnemonic::RLCA
             | Mnemonic::RLA
             | Mnemonic::RRCA
@@ -102,14 +103,14 @@ impl CPUImpl {
             | Mnemonic::SLA
             | Mnemonic::SWAP
             | Mnemonic::SRA
-            | Mnemonic::SRL => self.evaluate_bitwise(instruction_data, opcode_data),
+            | Mnemonic::SRL => self.evaluate_bitwise(instruction_data, opcode_data, mmu),
             Mnemonic::CCF
             | Mnemonic::SCF
             | Mnemonic::NOP
             | Mnemonic::HALT
             | Mnemonic::STOP
             | Mnemonic::DI
-            | Mnemonic::EI => self.evaluate_control(instruction_data, opcode_data),
+            | Mnemonic::EI => self.evaluate_control(instruction_data, opcode_data, mmu),
             Mnemonic::JP
             | Mnemonic::JR
             | Mnemonic::CALL
@@ -117,17 +118,19 @@ impl CPUImpl {
             | Mnemonic::RETI
             | Mnemonic::RST
             | Mnemonic::DB
-            | Mnemonic::DW => self.evaluate_branch(instruction_data, opcode_data),
-            Mnemonic::UNIMPLEMENTED => Ok(Clock::default()),
+            | Mnemonic::DW => self.evaluate_branch(instruction_data, opcode_data, mmu),
+            Mnemonic::UNIMPLEMENTED => Ok(0),
             _ => Err(Error::UnsupportedOpcode(
                 instruction_data.instruction.clone(),
             )),
-        }
+        }?;
+        println!("\t{:?}", self.registers);
+        Ok(result)
     }
 
     pub fn new() -> Result<CPUImpl, Error> {
         Ok(CPUImpl {
-            registers: Register::new(),
+            registers: Register::default(),
         })
     }
 }

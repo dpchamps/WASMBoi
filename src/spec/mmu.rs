@@ -60,10 +60,13 @@ impl MMU {
     }
 
     pub fn read_byte(&self, address: u16) -> Result<u8, Error> {
-        self.rom
-            .get(address as usize)
-            .map(|x| *x)
-            .ok_or(Error::ReadError)
+        match address {
+            _ => self.rom
+                .get(address as usize)
+                .map(|x| *x)
+                .ok_or(Error::ReadError)
+        }
+
     }
 
     pub fn read_word(&self, address: u16) -> Result<u16, Error> {
@@ -71,10 +74,19 @@ impl MMU {
     }
 
     pub fn write_byte(&mut self, address: u16, value: u8) -> Result<(), Error> {
-        unimplemented!()
+        match address {
+            _ => {
+                self.rom[address as usize] = value;
+                Ok(())
+            }
+        }
     }
 
-    pub fn write_word(&mut self, address: u16, value: u8) -> Result<(), Error> {
-        unimplemented!()
+    pub fn write_word(&mut self, address: u16, value: u16) -> Result<(), Error> {
+        let rhs = value & 0xFF;
+        let lhs = (value & 0xFF00) >> 8;
+
+        self.write_byte(address, rhs as u8)?;
+        self.write_byte(address+1, lhs as u8)
     }
 }

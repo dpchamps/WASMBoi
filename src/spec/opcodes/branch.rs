@@ -1,6 +1,7 @@
 use crate::dasm::InstructionData;
 use crate::spec::clock::Clock;
 use crate::spec::cpu::{CPUImpl, Error};
+use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
@@ -10,7 +11,8 @@ impl CPUImpl {
         &mut self,
         instruction_data: &InstructionData,
         opcode_data: &[u8; 2],
-    ) -> Result<Clock, Error> {
+        mmu: &mut MMU
+    ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::JP_NN => {
                 unimplemented!()
@@ -43,7 +45,10 @@ impl CPUImpl {
                 unimplemented!()
             }
             Instruction::RST => {
-                unimplemented!()
+                mmu.write_word(self.registers.sp, self.registers.pc).map_err(Error::MmuReadError)?;
+                self.registers.sp -= 2;
+                self.registers.pc = (instruction_data.byte_data.lhs as u16) * 8;;
+                Ok(4)
             }
             _ => Err(unexpected_op(&instruction_data.mnemonic, &Mnemonic::PUSH)),
         }

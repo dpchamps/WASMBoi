@@ -3,7 +3,6 @@ use crate::util::byte_ops::*;
 pub enum RegisterError {
     InvalidLookupInput,
 }
-
 type RegisterValue = &'static str;
 
 pub mod decoded_register {
@@ -27,23 +26,42 @@ pub mod decoded_register {
     pub const HLD: RegisterValue = "(HLD)";
 }
 
-#[derive(Default)]
+
+
+
+
+#[derive(Default, Debug)]
 pub struct Register {
-    a: u8,
-    b: u8,
-    c: u8,
-    d: u8,
-    e: u8,
-    h: u8,
-    l: u8,
-    f: u8,
+    pub a: u8,
+    pub b: u8,
+    pub c: u8,
+    pub d: u8,
+    pub e: u8,
+    pub h: u8,
+    pub l: u8,
+    pub f: u8,
     pub pc: u16,
     pub sp: u16,
 }
 
 impl Register {
     pub fn new() -> Register {
-        Register::default()
+        Register {
+            a: 0x01,
+            b: 0x00,
+            c: 0x13,
+            d: 0x00,
+            e: 0xD8,
+            h: 0x01,
+            l: 0x4D,
+            f: 0b1011,
+            pc: 0x100,
+            sp: 0xFFFE
+        }
+    }
+
+    pub fn set_flags(&mut self, z: u8, h: u8, n: u8, c: u8){
+        self.f = (z << 3) | (h << 2) | (n << 1) | c
     }
 
     pub fn bc(&self) -> u16 {
