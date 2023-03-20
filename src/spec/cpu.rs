@@ -4,16 +4,21 @@ use crate::spec::mmu::{Error as MmuError, MMU};
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::*;
-use crate::spec::register::Register;
+use crate::spec::register::{RegisterError, Registers, TRegister};
 use std::convert::TryFrom;
 
-pub trait CPU {
+pub trait TCPU {
     type E;
     fn tick(&mut self, mmu: &mut MMU) -> Result<u8, Self::E>;
 }
 
-pub struct CPUImpl {
-    pub(crate) registers: Register,
+pub trait TStackable {
+    fn push_stack_byte(&mut self, value: u8, mmu: &mut MMU) -> Result<(), Error>;
+    fn push_stack_word(&mut self, value: u16, mmu: &mut MMU) -> Result<(), Error>;
+}
+
+pub struct CPU {
+    pub(crate) registers: Registers,
 }
 
 #[derive(Debug)]
@@ -24,18 +29,25 @@ pub enum Error {
     UnsupportedOpcode(Instruction),
     MmuReadError(MmuError),
     DecodeError(DasmError),
+    RegisterError(RegisterError),
 }
 
-impl CPU for CPUImpl {
+impl From<RegisterError> for Error {
+    fn from(reg_error: RegisterError) -> Self {
+        Error::RegisterError(reg_error)
+    }
+}
+
+impl TCPU for CPU {
     type E = Error;
 
     fn tick(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
         let buf: Vec<u8> = Vec::new();
         let opcode = self.fetch(mmu)?;
         let data = [
-            mmu.read_byte(self.registers.pc)
+            mmu.read_byte(*self.registers.pc.get_value())
                 .map_err(|x| Error::MmuReadError(x))?,
-            mmu.read_byte(self.registers.pc + 1)
+            mmu.read_byte(*self.registers.pc.get_value() + 1)
                 .map_err(|x| Error::MmuReadError(x))?,
         ];
 
@@ -45,22 +57,49 @@ impl CPU for CPUImpl {
     }
 }
 
-impl CPUImpl {
-    fn increment_pc(&mut self) -> u16 {
-        let next = self.registers.pc;
-        self.registers.pc += 1;
-        // TODO intentional wrap;
-        return next;
+impl TStackable for CPU {
+    fn push_stack_byte(&mut self, value: u8, mmu: &mut MMU) -> Result<(), Error> {
+        self.registers
+            .sp
+            .update_value_checked(|sp| {
+                mmu.write_byte(*sp, value)?;
+                Ok(sp.checked_sub(1))
+            })
+            .map(|_| ())
+            .map_err(Error::RegisterError)
+    }
+
+    fn push_stack_word(&mut self, value: u16, mmu: &mut MMU) -> Result<(), Error> {
+        self.registers
+            .sp
+            .update_value_checked(|sp| {
+                mmu.write_word(*sp, value)?;
+                Ok(sp.checked_sub(2))
+            })
+            .map(|_| ())
+            .map_err(Error::RegisterError)
+    }
+}
+
+impl CPU {
+    fn increment_pc(&mut self) -> Result<u16, Error> {
+        let next = self.registers.pc.get_value().clone();
+        self.registers
+            .pc
+            .update_value_checked(|pc| Ok(pc.checked_add(1)))
+            .map_err(Error::RegisterError)?;
+
+        Ok(next)
     }
 
     fn fetch(&mut self, mmu: &MMU) -> Result<InstructionData, Error> {
-        let pc = self.increment_pc();
+        let pc = self.increment_pc()?;
         let op = {
             let op = mmu.read_byte(pc).map_err(|x| Error::MmuReadError(x))?;
 
             match op {
                 0xCB => {
-                    self.increment_pc();
+                    self.increment_pc()?;
                     mmu.read_byte(pc).map_err(|x| Error::MmuReadError(x))?
                 }
                 _ => op,
@@ -74,12 +113,19 @@ impl CPUImpl {
         &mut self,
         instruction_data: &InstructionData,
         opcode_data: &[u8; 2],
-        mmu: &mut MMU
+        mmu: &mut MMU,
     ) -> Result<u8, Error> {
-        println!("PC: {:#X}, Opcode: {}, Data: [{:?}]", self.registers.pc, instruction_data, opcode_data);
+        println!(
+            "PC: {:#X}, Opcode: {}, Data: [{:?}]",
+            self.registers.pc.get_value(),
+            instruction_data,
+            opcode_data
+        );
         let result = match instruction_data.mnemonic {
             Mnemonic::LD | Mnemonic::LDHL => self.evaluate_ld(instruction_data, opcode_data, mmu),
-            Mnemonic::PUSH | Mnemonic::POP => self.evaluate_stack_op(instruction_data, opcode_data, mmu),
+            Mnemonic::PUSH | Mnemonic::POP => {
+                self.evaluate_stack_op(instruction_data, opcode_data, mmu)
+            }
             Mnemonic::ADD
             | Mnemonic::ADC
             | Mnemonic::SUB
@@ -128,9 +174,9 @@ impl CPUImpl {
         Ok(result)
     }
 
-    pub fn new() -> Result<CPUImpl, Error> {
-        Ok(CPUImpl {
-            registers: Register::default(),
+    pub fn new() -> Result<CPU, Error> {
+        Ok(CPU {
+            registers: Registers::new(),
         })
     }
 }

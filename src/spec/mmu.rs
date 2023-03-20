@@ -61,12 +61,12 @@ impl MMU {
 
     pub fn read_byte(&self, address: u16) -> Result<u8, Error> {
         match address {
-            _ => self.rom
+            _ => self
+                .rom
                 .get(address as usize)
                 .map(|x| *x)
-                .ok_or(Error::ReadError)
+                .ok_or(Error::ReadError),
         }
-
     }
 
     pub fn read_word(&self, address: u16) -> Result<u16, Error> {
@@ -87,6 +87,6 @@ impl MMU {
         let lhs = (value & 0xFF00) >> 8;
 
         self.write_byte(address, rhs as u8)?;
-        self.write_byte(address+1, lhs as u8)
+        self.write_byte(address + 1, lhs as u8)
     }
 }

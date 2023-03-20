@@ -9,3 +9,4 @@ pub mod opcode;
 pub mod register;
 
 mod opcodes;
+mod register_ops;

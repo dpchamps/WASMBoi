@@ -6,12 +6,12 @@ use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 
-impl CPUImpl {
+impl CPU {
     pub(crate) fn evaluate_ld(
         &mut self,
         instruction_data: &InstructionData,
         opcode_data: &[u8; 2],
-        mmu: &mut MMU
+        mmu: &mut MMU,
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::LD_RR => {

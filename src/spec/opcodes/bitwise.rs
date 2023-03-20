@@ -1,17 +1,17 @@
 use crate::dasm::InstructionData;
 use crate::spec::clock::Clock;
-use crate::spec::cpu::{CPUImpl, Error};
+use crate::spec::cpu::{Error, CPU};
 use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 
-impl CPUImpl {
+impl CPU {
     pub(crate) fn evaluate_bitwise(
         &mut self,
         instruction_data: &InstructionData,
         opcode_data: &[u8; 2],
-        mmu: &mut MMU
+        mmu: &mut MMU,
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::RLCA => {

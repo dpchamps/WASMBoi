@@ -1,7 +1,7 @@
 use crate::format_byte;
 use crate::spec::cartridge_header::{Cartridge, CartridgeError};
 use crate::spec::opcode::{instruction_lookup, Instruction};
-use crate::spec::register::Register;
+use crate::spec::register::Registers;
 use crate::util::byte_ops::{extract_lhs, extract_rhs, hi_lo_combine};
 
 use crate::dasm::decoder::decode;
@@ -38,7 +38,7 @@ impl From<u8> for ByteData {
     fn from(byte: u8) -> Self {
         ByteData {
             lhs: extract_lhs(byte),
-            rhs: extract_rhs(byte)
+            rhs: extract_rhs(byte),
         }
     }
 }
@@ -69,7 +69,7 @@ impl TryFrom<u8> for InstructionData {
             instruction,
             size,
             mnemonic,
-            byte_data
+            byte_data,
         })
     }
 }
@@ -140,7 +140,7 @@ impl Disassembler {
             instruction,
             size,
             mnemonic,
-            byte_data
+            byte_data,
         })
     }
 }

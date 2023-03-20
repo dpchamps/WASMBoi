@@ -2,19 +2,22 @@
 
 use crate::dasm::InstructionData;
 use crate::spec::clock::Clock;
-use crate::spec::cpu::{CPUImpl, Error};
+use crate::spec::cpu::{Error, CPU};
 use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
+use crate::spec::register::TRegister;
+use crate::spec::register_ops::RegisterOp;
 use crate::util::byte_ops::hi_lo_combine;
+use std::num::Wrapping;
 
-impl CPUImpl {
+impl CPU {
     pub(crate) fn evaluate_alu(
         &mut self,
         instruction_data: &InstructionData,
         opcode_data: &[u8; 2],
-        mmu: &mut MMU
+        mmu: &mut MMU,
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::ADD_AR => {
@@ -84,14 +87,13 @@ impl CPUImpl {
                 unimplemented!()
             }
             Instruction::CP_N => {
-                let data = hi_lo_combine(opcode_data[0], opcode_data[1]) as i16;
-                let result = (self.registers.a as i16) - data;
-                let z = (result == 0) as u8;
-                let h = (((self.registers.a&0xf) as i16 - (data&0xf)) < 0) as u8;
-                let n = 1 as u8;
-                let c = (data > self.registers.a as i16) as u8;
+                self.registers.f.set_value(
+                    RegisterOp::new(*self.registers.a.get_value())
+                        .sub(opcode_data[0])
+                        .flags
+                        .get_value(),
+                );
 
-                self.registers.set_flags(z, h, n, c);
                 Ok(2)
             }
             Instruction::CP_HL => {

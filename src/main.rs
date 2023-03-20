@@ -4,8 +4,9 @@
 mod dasm;
 mod spec;
 mod util;
-
-use crate::spec::cpu::CPUImpl;
+#[macro_use]
+extern crate impl_ops;
+use crate::spec::cpu::CPU;
 use std::env;
 use std::fs;
 

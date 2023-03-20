@@ -27,7 +27,7 @@ pub mod cartridge_header_address {
 
 pub const GAME_TITLE_LENGTH: usize = 0xF;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum CartridgeType {
     ROM,
     MBC1,
