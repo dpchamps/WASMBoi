@@ -170,7 +170,7 @@ impl CPU {
                 instruction_data.instruction.clone(),
             )),
         }?;
-        println!("\t{:?}", self.registers);
+        println!("\t{}", self.registers);
         Ok(result)
     }
 

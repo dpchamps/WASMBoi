@@ -7,7 +7,7 @@ use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
-use crate::spec::register::TRegister;
+use crate::spec::register::{RegisterType, TRegister};
 use crate::spec::register_ops::RegisterOp;
 use crate::util::byte_ops::hi_lo_combine;
 use std::num::Wrapping;
@@ -87,12 +87,8 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::CP_N => {
-                self.registers.f.set_value(
-                    RegisterOp::new(*self.registers.a.get_value())
-                        .sub(opcode_data[0])
-                        .flags
-                        .get_value(),
-                );
+                self.registers
+                    .op(|registers| RegisterOp::new(*registers.a.get_value()).sub(opcode_data[0]));
 
                 Ok(2)
             }
