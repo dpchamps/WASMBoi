@@ -1,10 +1,10 @@
-use std::fmt::{Binary, Display, Formatter, UpperHex};
 use crate::spec::mmu::Error as MmuError;
 use crate::spec::register_ops::{CarryFlags, RegisterOp, RegisterOpResult};
 use crate::util::byte_ops::*;
 use num::traits::{WrappingAdd, WrappingSub};
 use num::PrimInt;
 use num_integer::Integer;
+use std::fmt::{Binary, Display, Formatter, UpperHex};
 use std::num::Wrapping;
 use std::ops::Index;
 
@@ -22,27 +22,6 @@ impl From<MmuError> for RegisterError {
 }
 
 type RegisterValue = &'static str;
-
-pub mod decoded_register {
-    use crate::spec::register::RegisterValue;
-
-    pub const A: RegisterValue = "A";
-    pub const B: RegisterValue = "B";
-    pub const C: RegisterValue = "C";
-    pub const D: RegisterValue = "D";
-    pub const E: RegisterValue = "E";
-    pub const H: RegisterValue = "H";
-    pub const L: RegisterValue = "L";
-    pub const F: RegisterValue = "F";
-    pub const BC: RegisterValue = "(BC)";
-    pub const DE: RegisterValue = "(DE)";
-    pub const HL: RegisterValue = "(HL)";
-    pub const SP: RegisterValue = "SP";
-    pub const FF00C: RegisterValue = "(C)";
-    pub const AF: RegisterValue = "(AF)";
-    pub const HLI: RegisterValue = "(HLI)";
-    pub const HLD: RegisterValue = "(HLD)";
-}
 
 pub trait TRegister<'a> {
     type ValueType: 'a + PrimInt;
@@ -182,36 +161,6 @@ impl Registers {
         hi_lo_combine(self.a.value, self.f.value)
     }
 
-    pub fn lookup_register(input: u8) -> Result<RegisterValue, RegisterError> {
-        match input {
-            0b111 => Ok(decoded_register::A),
-            0b000 => Ok(decoded_register::B),
-            0b001 => Ok(decoded_register::C),
-            0b010 => Ok(decoded_register::D),
-            0b011 => Ok(decoded_register::E),
-            0b100 => Ok(decoded_register::H),
-            0b101 => Ok(decoded_register::L),
-            _ => Err(RegisterError::InvalidLookupInput),
-        }
-    }
-
-    pub fn lookup_ld_register(input: u8) -> Result<RegisterValue, RegisterError> {
-        match input {
-            0b00 => Ok(decoded_register::BC),
-            0b01 => Ok(decoded_register::DE),
-            0b10 => Ok(decoded_register::HL),
-            0b11 => Ok(decoded_register::SP),
-            _ => Err(RegisterError::InvalidLookupInput),
-        }
-    }
-
-    pub fn lookup_stack_op_register(input: u8) -> Result<RegisterValue, RegisterError> {
-        match input {
-            0b11 => Ok(decoded_register::AF),
-            _ => Registers::lookup_ld_register(input),
-        }
-    }
-
     pub fn op<F, T>(&mut self, mut f: F) -> T
     where
         T: PrimInt + CarryFlags + WrappingAdd + WrappingSub,
@@ -224,9 +173,9 @@ impl Registers {
     }
 
     pub fn op_with_effect<F, T>(&mut self, mut f: F) -> T
-        where
-            T: PrimInt + CarryFlags + WrappingAdd + WrappingSub,
-            F: for<'b> FnMut(&'b mut Self) -> RegisterOpResult<T>,
+    where
+        T: PrimInt + CarryFlags + WrappingAdd + WrappingSub,
+        F: for<'b> FnMut(&'b mut Self) -> RegisterOpResult<T>,
     {
         let result = f(self);
         self.f.set_value(result.flags.get_value());
@@ -252,17 +201,32 @@ impl Registers {
 
 impl Display for Registers {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Registers[{} {} {} {} {} {} {} {} {}, BC: {:X}, DE: {:X}, HL: {:X}, AF: {:X}]", self.a, self.b, self.c, self.d, self.h, self.l, self.f, self.pc, self.sp,  self.bc(), self.de(), self.hl(), self.af())
+        write!(
+            f,
+            "Registers[{} {} {} {} {} {} {} {} {}, BC: {:X}, DE: {:X}, HL: {:X}, AF: {:X}]",
+            self.a,
+            self.b,
+            self.c,
+            self.d,
+            self.h,
+            self.l,
+            self.f,
+            self.pc,
+            self.sp,
+            self.bc(),
+            self.de(),
+            self.hl(),
+            self.af()
+        )
     }
 }
 
-impl<T: Default+UpperHex+Binary> Display for Register<T> {
+impl<T: Default + UpperHex + Binary> Display for Register<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self.tag {
             RegisterType::F => write!(f, "[{}]: {:04b}", self.tag, self.value),
-            _ => write!(f, "[{}]: {:X}", self.tag, self.value)
+            _ => write!(f, "[{}]: {:X}", self.tag, self.value),
         }
-
     }
 }
 
@@ -278,7 +242,7 @@ impl Display for RegisterType {
             RegisterType::L => "L",
             RegisterType::F => "F",
             RegisterType::PC => "PC",
-            RegisterType::SP => "SP"
+            RegisterType::SP => "SP",
         };
         write!(f, "{}", s)
     }
