@@ -65,10 +65,7 @@ impl GameBoy {
     }
 
     pub fn cycle(&mut self) -> Result<(), GameBoyError> {
-        let cycles = self
-            .cpu
-            .tick(&mut self.mmu)
-            .map_err(GameBoyError::Cpu)?;
+        let cycles = self.cpu.tick(&mut self.mmu).map_err(GameBoyError::Cpu)?;
         self.clock.add_cycles(cycles);
 
         Ok(())

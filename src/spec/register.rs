@@ -28,7 +28,7 @@ pub trait TRegister<'a> {
     where
         F: for<'b> FnMut(&'b Self::ValueType) -> Result<Option<Self::ValueType>, RegisterError>;
 
-    fn update_value_wrapped<F>() -> ()
+    fn update_value_wrapped<F>()
     where
         F: for<'b> FnMut(Wrapping<&'b Self::ValueType>) -> Self::ValueType;
 
@@ -58,7 +58,7 @@ impl<'a, T: 'a + Default + PrimInt> TRegister<'a> for Register<T> {
         Ok(())
     }
 
-    fn update_value_wrapped<F>() -> ()
+    fn update_value_wrapped<F>()
     where
         F: for<'b> FnMut(Wrapping<&'b Self::ValueType>) -> Self::ValueType,
     {
@@ -150,7 +150,8 @@ impl Registers {
     }
 
     pub fn update<F>(&mut self, mut f: F)
-    where F: for<'b> FnMut(&'b mut Self) -> ()
+    where
+        F: for<'b> FnMut(&'b mut Self),
     {
         f(self)
     }
