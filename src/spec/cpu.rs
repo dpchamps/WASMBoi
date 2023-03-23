@@ -46,9 +46,9 @@ impl TCPU for CPU {
         let opcode = self.fetch(mmu)?;
         let data = [
             mmu.read_byte(*self.registers.pc.get_value())
-                .map_err(|x| Error::MmuReadError(x))?,
+                .map_err(Error::MmuReadError)?,
             mmu.read_byte(*self.registers.pc.get_value() + 1)
-                .map_err(|x| Error::MmuReadError(x))?,
+                .map_err(Error::MmuReadError)?,
         ];
 
         let cycles = self.execute(&opcode, &data, mmu)?;
@@ -83,7 +83,7 @@ impl TStackable for CPU {
 
 impl CPU {
     fn increment_pc(&mut self) -> Result<u16, Error> {
-        let next = self.registers.pc.get_value().clone();
+        let next = *self.registers.pc.get_value();
         self.registers
             .pc
             .update_value_checked(|pc| Ok(pc.checked_add(1)))
@@ -95,18 +95,18 @@ impl CPU {
     fn fetch(&mut self, mmu: &MMU) -> Result<InstructionData, Error> {
         let pc = self.increment_pc()?;
         let op = {
-            let op = mmu.read_byte(pc).map_err(|x| Error::MmuReadError(x))?;
+            let op = mmu.read_byte(pc).map_err(Error::MmuReadError)?;
 
             match op {
                 0xCB => {
                     self.increment_pc()?;
-                    mmu.read_byte(pc).map_err(|x| Error::MmuReadError(x))?
+                    mmu.read_byte(pc).map_err(Error::MmuReadError)?
                 }
                 _ => op,
             }
         };
 
-        InstructionData::try_from(op).map_err(|x| Error::DecodeError(x))
+        InstructionData::try_from(op).map_err(Error::DecodeError)
     }
 
     fn execute(

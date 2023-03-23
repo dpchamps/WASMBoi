@@ -9,6 +9,6 @@ impl Clock {
     }
 
     pub fn add_cycles(&mut self, cycles: u8) {
-        self.cycles += (cycles as usize);
+        self.cycles += cycles as usize;
     }
 }

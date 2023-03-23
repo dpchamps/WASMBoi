@@ -125,7 +125,7 @@ impl Display for Mnemonic {
 
 impl From<&Instruction> for Mnemonic {
     fn from(instruction: &Instruction) -> Self {
-        return match instruction {
+        match instruction {
             Instruction::LD_RR
             | Instruction::LD_RN
             | Instruction::LD_RHL
@@ -242,6 +242,6 @@ impl From<&Instruction> for Mnemonic {
             Instruction::RST => Mnemonic::RST,
 
             Instruction::UNIMPLEMENTED => Mnemonic::UNIMPLEMENTED,
-        };
+        }
     }
 }

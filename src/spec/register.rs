@@ -36,7 +36,7 @@ pub trait TRegister<'a> {
 
     fn get_value(&'a self) -> &'a Self::ValueType;
 
-    fn set_value(&mut self, value: Self::ValueType) -> ();
+    fn set_value(&mut self, value: Self::ValueType);
 
     fn result_wrapped<F>(&self, f: F) -> Wrapping<Self::ValueType>
     where
@@ -166,7 +166,7 @@ impl Registers {
         T: PrimInt + CarryFlags + WrappingAdd + WrappingSub,
         F: for<'b> FnMut(&'b Self) -> RegisterOpResult<T>,
     {
-        let result = f(&self);
+        let result = f(self);
         self.f.set_value(result.flags.get_value());
 
         result.value

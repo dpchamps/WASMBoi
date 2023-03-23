@@ -27,7 +27,7 @@ pub mod cartridge_header_address {
 
 pub const GAME_TITLE_LENGTH: usize = 0xF;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum CartridgeType {
     ROM,
     MBC1,
@@ -171,7 +171,7 @@ impl Cartridge {
         let ram_size =
             lookup_cartridge_ram_size(buffer[cartridge_header_address::CARTRIDGE_RAM_SIZE])?;
 
-        return Ok(Self {
+        Ok(Self {
             start_address: hi_lo_combine(
                 buffer[cartridge_header_address::ENTRY + 1],
                 buffer[cartridge_header_address::ENTRY],
@@ -182,7 +182,7 @@ impl Cartridge {
             game_title: game_title.to_string(),
             rom_size,
             ram_size,
-        });
+        })
     }
 
     pub fn header_info(&self) -> String {

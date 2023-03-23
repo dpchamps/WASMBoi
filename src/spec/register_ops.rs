@@ -26,7 +26,7 @@ impl From<&FlagRegister> for Flags {
     }
 }
 
-#[derive(Default, PartialEq, Debug)]
+#[derive(Default, PartialEq, Eq, Debug)]
 pub struct FlagRegister(pub u8);
 
 impl FlagRegister {
@@ -194,7 +194,7 @@ mod register_ops_test {
 
     #[test]
     fn addition() {
-        let x = RegisterOp::new(10 as u8);
+        let x = RegisterOp::new(10_u8);
         let result = x.add(10);
         assert_eq!(20, result.value);
         assert_eq!(FlagRegister::new(false, false, true, false), result.flags);

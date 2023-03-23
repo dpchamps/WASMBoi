@@ -60,13 +60,10 @@ impl MMU {
     }
 
     pub fn read_byte(&self, address: u16) -> Result<u8, Error> {
-        match address {
-            _ => self
-                .rom
-                .get(address as usize)
-                .map(|x| *x)
-                .ok_or(Error::ReadError),
-        }
+        self
+        .rom
+        .get(address as usize).copied()
+        .ok_or(Error::ReadError)
     }
 
     pub fn read_word(&self, address: u16) -> Result<u16, Error> {
@@ -74,11 +71,9 @@ impl MMU {
     }
 
     pub fn write_byte(&mut self, address: u16, value: u8) -> Result<(), Error> {
-        match address {
-            _ => {
-                self.rom[address as usize] = value;
-                Ok(())
-            }
+        {
+            self.rom[address as usize] = value;
+            Ok(())
         }
     }
 
