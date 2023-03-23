@@ -21,26 +21,20 @@ impl From<MmuError> for RegisterError {
     }
 }
 
-type RegisterValue = &'static str;
-
 pub trait TRegister<'a> {
     type ValueType: 'a + PrimInt;
 
-    fn update_value_checked<F>(&'a mut self, f: F) -> Result<&'a Self::ValueType, RegisterError>
+    fn update_value_checked<F>(&'a mut self, f: F) -> Result<(), RegisterError>
     where
         F: for<'b> FnMut(&'b Self::ValueType) -> Result<Option<Self::ValueType>, RegisterError>;
 
-    fn update_value_wrapped<F>() -> &'a Self::ValueType
+    fn update_value_wrapped<F>() -> ()
     where
         F: for<'b> FnMut(Wrapping<&'b Self::ValueType>) -> Self::ValueType;
 
     fn get_value(&'a self) -> &'a Self::ValueType;
 
     fn set_value(&mut self, value: Self::ValueType);
-
-    fn result_wrapped<F>(&self, f: F) -> Wrapping<Self::ValueType>
-    where
-        F: for<'b> FnMut(&'b Self::ValueType) -> Wrapping<Self::ValueType>;
 }
 
 pub trait FlagRegister {}
@@ -54,21 +48,21 @@ pub struct Register<T: Default> {
 impl<'a, T: 'a + Default + PrimInt> TRegister<'a> for Register<T> {
     type ValueType = T;
 
-    fn update_value_checked<F>(&'a mut self, mut f: F) -> Result<&'a Self::ValueType, RegisterError>
+    fn update_value_checked<F>(&'a mut self, mut f: F) -> Result<(), RegisterError>
     where
         F: for<'b> FnMut(&'b Self::ValueType) -> Result<Option<Self::ValueType>, RegisterError>,
     {
         let result = f(&self.value)?.ok_or(RegisterError::CheckedFailure)?;
         self.value = result;
 
-        Ok(&self.value)
+        Ok(())
     }
 
-    fn update_value_wrapped<F>() -> &'a Self::ValueType
+    fn update_value_wrapped<F>() -> ()
     where
         F: for<'b> FnMut(Wrapping<&'b Self::ValueType>) -> Self::ValueType,
     {
-        todo!()
+        unimplemented!()
     }
 
     fn get_value(&'a self) -> &'a Self::ValueType {
@@ -77,13 +71,6 @@ impl<'a, T: 'a + Default + PrimInt> TRegister<'a> for Register<T> {
 
     fn set_value(&mut self, value: T) {
         self.value = value;
-    }
-
-    fn result_wrapped<F>(&self, mut f: F) -> Wrapping<Self::ValueType>
-    where
-        F: for<'b> FnMut(&'b Self::ValueType) -> Wrapping<Self::ValueType>,
-    {
-        f(&self.value)
     }
 }
 
@@ -115,6 +102,7 @@ pub enum RegisterRef<'a> {
     SP(&'a Register<u16>),
 }
 
+/// TODO: Implement Display Trait for Registers
 #[derive(Debug)]
 pub struct Registers {
     pub a: Register<u8>,
@@ -159,6 +147,12 @@ impl Registers {
 
     pub fn af(&self) -> u16 {
         hi_lo_combine(self.a.value, self.f.value)
+    }
+
+    pub fn update<F>(&mut self, mut f: F)
+    where F: for<'b> FnMut(&'b mut Self) -> ()
+    {
+        f(self)
     }
 
     pub fn op<F, T>(&mut self, mut f: F) -> T

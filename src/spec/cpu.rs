@@ -65,7 +65,6 @@ impl TStackable for CPU {
                 mmu.write_byte(*sp, value)?;
                 Ok(sp.checked_sub(1))
             })
-            .map(|_| ())
             .map_err(Error::RegisterError)
     }
 
@@ -76,7 +75,6 @@ impl TStackable for CPU {
                 mmu.write_word(*sp, value)?;
                 Ok(sp.checked_sub(2))
             })
-            .map(|_| ())
             .map_err(Error::RegisterError)
     }
 }

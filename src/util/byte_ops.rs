@@ -8,6 +8,21 @@ const RHS_MASK: u8 = 0b111;
 const REGISTER_PAIR_MASK: u8 = 0b00111000;
 const JUMP_CONDITION_MASK: u8 = 0b00011000;
 
+trait ByteOps16 {
+    fn combine(&self) -> u16;
+}
+
+trait ByteOps8 {
+    fn lhs(self) -> u8;
+    fn rhs(self) -> u8;
+}
+
+impl ByteOps16 for [u8; 2] {
+    fn combine(&self) -> u16 {
+        left_shift(self[1]) | self[0] as u16
+    }
+}
+
 pub fn hi_lo_combine(hi: u8, lo: u8) -> u16 {
     left_shift(hi) | (lo as u16)
 }
