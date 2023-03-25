@@ -5,6 +5,8 @@ use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
+use crate::spec::register::TRegister;
+use crate::util::byte_ops::hi_lo_combine;
 
 impl CPU {
     pub(crate) fn evaluate_ld(
@@ -72,7 +74,33 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::LD_RRNN => {
-                unimplemented!()
+                let dd = instruction_data.byte_data.lhs >> 1;
+
+                match dd {
+                    0b00 => {
+                        // BC
+                        self.registers.b.set_value(opcode_data[0]);
+                        self.registers.c.set_value(opcode_data[1]);
+                    },
+                    0b01 => {
+                        // DE
+                        self.registers.d.set_value(opcode_data[0]);
+                        self.registers.e.set_value(opcode_data[1]);
+                    },
+                    0b10 => {
+                        // HL
+                        self.registers.h.set_value(opcode_data[0]);
+                        self.registers.l.set_value(opcode_data[1]);
+                    },
+                    0b11 => {
+                        self.registers.sp.set_value(hi_lo_combine(opcode_data[1], opcode_data[0]));
+                    }
+                    _ => {
+                        return Err(Error::UnexpectedOpcodeState(instruction_data.clone(), dd as u16))
+                    }
+                }
+
+                Ok(3)
             }
             Instruction::LD_SPHL => {
                 unimplemented!()

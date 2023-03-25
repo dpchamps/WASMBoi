@@ -25,7 +25,7 @@ impl Mbc for Rom {
             0xA000..=0xBFFF => {
                 Ok(self.ram[(address - 0xA000) as usize])
             },
-            _ => Err(MbcError::Read)
+            _ => Err(MbcError::Read(address))
         }
     }
 
@@ -36,7 +36,7 @@ impl Mbc for Rom {
                 self.ram[(address - 0xA000) as usize] = value;
                 Ok(())
             }
-            _ => Err(MbcError::Write)
+            _ => Err(MbcError::Write(address, value))
         }
     }
 }

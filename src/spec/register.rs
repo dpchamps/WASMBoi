@@ -128,7 +128,7 @@ impl Registers {
             h: Register::new(0x01, RegisterType::H),
             l: Register::new(0x4D, RegisterType::L),
             f: Register::new(0b1011, RegisterType::F),
-            pc: Register::new(0x100, RegisterType::SP),
+            pc: Register::new(0x100, RegisterType::PC),
             sp: Register::new(0xFFFE, RegisterType::SP),
         }
     }

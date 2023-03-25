@@ -58,6 +58,7 @@ impl From<&CartridgeType> for MbcType {
 
 pub struct MMU {
     mbc: Box<dyn Mbc>,
+
 }
 
 impl MMU {

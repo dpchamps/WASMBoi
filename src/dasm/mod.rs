@@ -26,7 +26,7 @@ pub struct Disassembler {
     cartridge: Cartridge,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ByteData {
     pub lhs: u8,
     pub rhs: u8,
@@ -41,7 +41,7 @@ impl From<u8> for ByteData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InstructionData {
     pub byte: u8,
     pub size: usize,

@@ -19,6 +19,7 @@ pub trait TStackable {
 
 pub struct CPU {
     pub(crate) registers: Registers,
+    pub(crate) enable_interrupts: bool
 }
 
 #[derive(Debug)]
@@ -30,6 +31,7 @@ pub enum Error {
     MmuReadError(MmuError),
     DecodeError(DasmError),
     RegisterError(RegisterError),
+    UnexpectedOpcodeState(InstructionData, u16)
 }
 
 impl From<RegisterError> for Error {
@@ -114,7 +116,7 @@ impl CPU {
         mmu: &mut MMU,
     ) -> Result<u8, Error> {
         println!(
-            "PC: {:#X}, Opcode: {}, Data: [{:?}]",
+            "[PC: {:#X}] Opcode: {}, Data: [{:X?}]",
             self.registers.pc.get_value(),
             instruction_data,
             opcode_data
@@ -175,6 +177,7 @@ impl CPU {
     pub fn new() -> Result<CPU, Error> {
         Ok(CPU {
             registers: Registers::new(),
+            enable_interrupts: false
         })
     }
 }

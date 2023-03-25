@@ -3,7 +3,7 @@
 use crate::spec::opcode::Instruction;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Mnemonic {
     LD,
     LDHL,

@@ -6,6 +6,7 @@ use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::TRegister;
+use crate::util::byte_ops::hi_lo_combine;
 
 impl CPU {
     pub(crate) fn evaluate_branch(
@@ -16,7 +17,9 @@ impl CPU {
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::JP_NN => {
-                unimplemented!()
+                let address = hi_lo_combine(opcode_data[1], opcode_data[0]);
+                self.registers.pc.set_value(address);
+                Ok(4)
             }
             Instruction::JP_HL => {
                 unimplemented!()

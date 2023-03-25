@@ -46,7 +46,7 @@ impl Mbc for Mbc1 {
 
                 Ok(self.ram[address as usize])
             }
-            _ => Err(MbcError::Read)
+            _ => Err(MbcError::Read(address))
         }
     }
 
@@ -87,7 +87,7 @@ impl Mbc for Mbc1 {
 
                 Ok(())
             }
-            _ => Err(MbcError::Write)
+            _ => Err(MbcError::Write(address, data))
         }
 
     }

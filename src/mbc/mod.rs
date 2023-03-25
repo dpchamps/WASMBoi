@@ -5,8 +5,8 @@ pub mod mbc1;
 
 #[derive(Debug)]
 pub enum MbcError {
-    Read,
-    Write
+    Read(u16),
+    Write(u16, u8)
 }
 
 pub trait Mbc {
