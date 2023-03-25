@@ -60,13 +60,17 @@ impl From<&CartridgeType> for MbcType {
 pub struct MMU {
     mbc: Box<dyn Mbc>,
     enable_interrupts: u8,
+    internal_ram: Box<[u8]>,
+    hi_ram: Box<[u8]>
 }
 
 impl MMU {
     pub fn new(game_data: &[u8], cart_type: &CartridgeType) -> Result<MMU, Error> {
         Ok(MMU {
             mbc: Self::create_mbc_from_type(cart_type, game_data),
-            enable_interrupts: 0
+            enable_interrupts: 0,
+            internal_ram: Box::from([0; 0xE000-0xC000]),
+            hi_ram: Box::from([0; 0xFFFF-0xFF80])
         })
     }
 
@@ -79,7 +83,13 @@ impl MMU {
             0xC000..=0xFDFF => {
                 // Internal work ram
                 // Note 0xE000-0xFDFF is mirror ram
-                unimplemented!("internal work ram")
+                let mirrored_address = if address >= 0xE000 {
+                    address-0xE000
+                } else {
+                    address
+                };
+
+                Ok(self.internal_ram[(mirrored_address-0xC000) as usize])
             },
             0xFEA0..=0xFEFF => {
                 Err(Error::UnusableWriteRegion)
@@ -88,7 +98,7 @@ impl MMU {
                 unimplemented!("io reg")
             },
             0xFF80..=0xFFFE => {
-                unimplemented!("hiram")
+                Ok(self.hi_ram[(address-0xFF80) as usize])
             },
             0xFFFF => {
                 Ok(self.enable_interrupts)
@@ -106,7 +116,14 @@ impl MMU {
             0xC000..=0xFDFF => {
                 // Internal work ram
                 // Note 0xE000-0xFDFF is mirror ram
-                unimplemented!("internal work ram")
+                let mirrored_address = if address >= 0xE000 {
+                    address-0xE000
+                } else {
+                    address
+                };
+
+                self.internal_ram[(mirrored_address - 0xC000) as usize] = value;
+                Ok(())
             },
             0xFEA0..=0xFEFF => {
                 Err(Error::UnusableWriteRegion)
@@ -115,7 +132,8 @@ impl MMU {
                 unimplemented!("io reg")
             },
             0xFF80..=0xFFFE => {
-                unimplemented!("hiram")
+                self.hi_ram[(address - 0xFF80) as usize];
+                Ok(())
             },
             0xFFFF => {
                 self.enable_interrupts = value;
