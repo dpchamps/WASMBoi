@@ -30,11 +30,11 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::DI => {
-                self.enable_interrupts = false;
+                mmu.write_interrupt_enable_reg(false)?;
                 Ok(1)
             }
             Instruction::EI => {
-                self.enable_interrupts = true;
+                mmu.write_interrupt_enable_reg(true)?;
                 Ok(1)
             }
             _ => Err(unexpected_op(&instruction_data.mnemonic, &Mnemonic::PUSH)),

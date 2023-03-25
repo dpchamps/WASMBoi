@@ -19,7 +19,6 @@ pub trait TStackable {
 
 pub struct CPU {
     pub(crate) registers: Registers,
-    pub(crate) enable_interrupts: bool
 }
 
 #[derive(Debug)]
@@ -28,7 +27,7 @@ pub enum Error {
     InitializationError,
     UnexpectedOpcode(String),
     UnsupportedOpcode(Instruction),
-    MmuReadError(MmuError),
+    MmuError(MmuError),
     DecodeError(DasmError),
     RegisterError(RegisterError),
     UnexpectedOpcodeState(InstructionData, u16)
@@ -40,6 +39,12 @@ impl From<RegisterError> for Error {
     }
 }
 
+impl From<MmuError> for Error {
+    fn from(mmu_error: MmuError) -> Self {
+        Error::MmuError(mmu_error)
+    }
+}
+
 impl TCPU for CPU {
     type E = Error;
 
@@ -48,9 +53,9 @@ impl TCPU for CPU {
         let opcode = self.fetch(mmu)?;
         let data = [
             mmu.read_byte(*self.registers.pc.get_value())
-                .map_err(Error::MmuReadError)?,
+                .map_err(Error::MmuError)?,
             mmu.read_byte(*self.registers.pc.get_value() + 1)
-                .map_err(Error::MmuReadError)?,
+                .map_err(Error::MmuError)?,
         ];
 
         let cycles = self.execute(&opcode, &data, mmu)?;
@@ -95,12 +100,12 @@ impl CPU {
     fn fetch(&mut self, mmu: &MMU) -> Result<InstructionData, Error> {
         let pc = self.increment_pc()?;
         let op = {
-            let op = mmu.read_byte(pc).map_err(Error::MmuReadError)?;
+            let op = mmu.read_byte(pc).map_err(Error::MmuError)?;
 
             match op {
                 0xCB => {
                     self.increment_pc()?;
-                    mmu.read_byte(pc).map_err(Error::MmuReadError)?
+                    mmu.read_byte(pc).map_err(Error::MmuError)?
                 }
                 _ => op,
             }
@@ -177,7 +182,6 @@ impl CPU {
     pub fn new() -> Result<CPU, Error> {
         Ok(CPU {
             registers: Registers::new(),
-            enable_interrupts: false
         })
     }
 }

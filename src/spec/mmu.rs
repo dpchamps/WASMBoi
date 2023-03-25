@@ -9,7 +9,8 @@ pub enum Error {
     CreateError,
     ReadError,
     WriteError,
-    MBCError(MbcError)
+    MBCError(MbcError),
+    UnusableWriteRegion
 }
 
 impl From<MbcError> for Error {
@@ -58,18 +59,72 @@ impl From<&CartridgeType> for MbcType {
 
 pub struct MMU {
     mbc: Box<dyn Mbc>,
-
+    enable_interrupts: u8,
 }
 
 impl MMU {
     pub fn new(game_data: &[u8], cart_type: &CartridgeType) -> Result<MMU, Error> {
         Ok(MMU {
             mbc: Self::create_mbc_from_type(cart_type, game_data),
+            enable_interrupts: 0
         })
     }
 
     pub fn read_byte(&self, address: u16) -> Result<u8, Error> {
-        self.mbc.map_read(address).map_err(Error::MBCError)
+        match address {
+            0x8000..=0x9FFF => {
+                // VIDEO RAM
+                unimplemented!("video ram")
+            },
+            0xC000..=0xFDFF => {
+                // Internal work ram
+                // Note 0xE000-0xFDFF is mirror ram
+                unimplemented!("internal work ram")
+            },
+            0xFEA0..=0xFEFF => {
+                Err(Error::UnusableWriteRegion)
+            },
+            0xFF00..=0xFF7F => {
+                unimplemented!("io reg")
+            },
+            0xFF80..=0xFFFE => {
+                unimplemented!("hiram")
+            },
+            0xFFFF => {
+                Ok(self.enable_interrupts)
+            },
+            _ => self.mbc.map_read(address).map_err(Error::MBCError)
+        }
+    }
+
+    pub fn write_byte(&mut self, address: u16, value: u8) -> Result<(), Error> {
+        match address {
+            0x8000..=0x9FFF => {
+                // VIDEO RAM
+                unimplemented!("video ram")
+            },
+            0xC000..=0xFDFF => {
+                // Internal work ram
+                // Note 0xE000-0xFDFF is mirror ram
+                unimplemented!("internal work ram")
+            },
+            0xFEA0..=0xFEFF => {
+                Err(Error::UnusableWriteRegion)
+            },
+            0xFF00..=0xFF7F => {
+                unimplemented!("io reg")
+            },
+            0xFF80..=0xFFFE => {
+                unimplemented!("hiram")
+            },
+            0xFFFF => {
+                self.enable_interrupts = value;
+                Ok(())
+            },
+            _ => {
+                self.mbc.map_write(address, value).map_err(Error::MBCError)
+            }
+        }
     }
 
     pub fn read_word(&self, address: u16) -> Result<u16, Error> {
@@ -79,18 +134,16 @@ impl MMU {
         Ok((lhs << 0xFF) | rhs)
     }
 
-    pub fn write_byte(&mut self, address: u16, value: u8) -> Result<(), Error> {
-        {
-            self.mbc.map_write(address, value).map_err(Error::MBCError)
-        }
-    }
-
     pub fn write_word(&mut self, address: u16, value: u16) -> Result<(), Error> {
         let rhs = value & 0xFF;
         let lhs = (value & 0xFF00) >> 8;
 
         self.write_byte(address, rhs as u8)?;
         self.write_byte(address + 1, lhs as u8)
+    }
+
+    pub fn write_interrupt_enable_reg(&mut self, value: bool) -> Result<(), Error> {
+        self.write_byte(0xFFFF, value as u8)
     }
 
     fn create_mbc_from_type(cart_type: &CartridgeType, data: &[u8]) -> Box<dyn Mbc> {
