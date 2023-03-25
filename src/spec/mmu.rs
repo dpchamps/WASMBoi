@@ -84,7 +84,7 @@ impl MMU {
                 // Internal work ram
                 // Note 0xE000-0xFDFF is mirror ram
                 let mirrored_address = if address >= 0xE000 {
-                    address-0xE000
+                    address-(0xE000-0xC000)
                 } else {
                     address
                 };
@@ -117,7 +117,7 @@ impl MMU {
                 // Internal work ram
                 // Note 0xE000-0xFDFF is mirror ram
                 let mirrored_address = if address >= 0xE000 {
-                    address-0xE000
+                    address-(0xE000-0xC000)
                 } else {
                     address
                 };

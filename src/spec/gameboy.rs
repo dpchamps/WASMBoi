@@ -76,14 +76,11 @@ impl GameBoy {
             .registers
             .pc
             .set_value(self.cartridge.start_address);
-        self.cycle()?;
-        self.cycle()?;
-        self.cycle()?;
-        self.cycle()?;
-        Ok(())
 
-        // loop {
-        //     self.cycle()?
-        // }
+        loop {
+            self.cycle()?
+        }
+
+        Ok(())
     }
 }
