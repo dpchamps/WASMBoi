@@ -77,9 +77,13 @@ impl GameBoy {
             .pc
             .set_value(self.cartridge.start_address);
 
-        loop {
+        for _ in 0..20 {
             self.cycle()?
         }
+
+        // loop {
+        //     self.cycle()?
+        // }
 
         Ok(())
     }

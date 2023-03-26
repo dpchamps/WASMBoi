@@ -21,7 +21,7 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::NOP => {
-                unimplemented!()
+                Ok(1)
             }
             Instruction::HALT => {
                 unimplemented!()

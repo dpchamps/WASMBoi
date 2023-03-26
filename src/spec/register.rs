@@ -7,6 +7,7 @@ use num_integer::Integer;
 use std::fmt::{Binary, Display, Formatter, UpperHex};
 use std::num::Wrapping;
 use std::ops::Index;
+use crate::spec::cpu::Error;
 
 #[derive(Debug)]
 pub enum RegisterError {
@@ -95,11 +96,11 @@ pub enum RegisterType {
 }
 
 #[derive(Debug)]
-pub enum RegisterRef<'a> {
-    Byte(&'a Register<u8>),
-    Flag(&'a Register<u8>),
-    PC(&'a Register<u16>),
-    SP(&'a Register<u16>),
+pub enum RegisterRefMut<'a> {
+    Byte(&'a mut Register<u8>),
+    Flag(&'a mut Register<u8>),
+    PC(&'a mut Register<u16>),
+    SP(&'a mut Register<u16>),
 }
 
 /// TODO: Implement Display Trait for Registers
@@ -167,31 +168,44 @@ impl Registers {
         result.value
     }
 
-    pub fn op_with_effect<F, T>(&mut self, mut f: F) -> T
+    pub fn op_with_effect<F, T>(&mut self, mut f: F) -> Result<T, RegisterError>
     where
         T: PrimInt + CarryFlags + WrappingAdd + WrappingSub,
-        F: for<'b> FnMut(&'b mut Self) -> RegisterOpResult<T>,
+        F: for<'b> FnMut(&'b mut Self) -> Result<RegisterOpResult<T>, RegisterError>,
     {
-        let result = f(self);
+        let result = f(self)?;
         self.f.set_value(result.flags.get_value());
 
-        result.value
+        Ok(result.value)
     }
 
-    fn at(&self, index: RegisterType) -> RegisterRef {
-        match index {
-            RegisterType::A => RegisterRef::Byte(&self.a),
-            RegisterType::B => RegisterRef::Byte(&self.b),
-            RegisterType::C => RegisterRef::Byte(&self.c),
-            RegisterType::D => RegisterRef::Byte(&self.d),
-            RegisterType::E => RegisterRef::Byte(&self.e),
-            RegisterType::H => RegisterRef::Byte(&self.f),
-            RegisterType::L => RegisterRef::Byte(&self.l),
-            RegisterType::F => RegisterRef::Flag(&self.f),
-            RegisterType::PC => RegisterRef::PC(&self.pc),
-            RegisterType::SP => RegisterRef::SP(&self.sp),
+    pub fn reg_from_byte(&mut self, value: u8) -> Result<RegisterRefMut, RegisterError> {
+        match value {
+            0b111 => Ok(RegisterRefMut::Byte(&mut self.a)),
+            0b000 => Ok(RegisterRefMut::Byte(&mut self.b)),
+            0b001 => Ok(RegisterRefMut::Byte(&mut self.c)),
+            0b010 => Ok(RegisterRefMut::Byte(&mut self.d)),
+            0b011 => Ok(RegisterRefMut::Byte(&mut self.e)),
+            0b100 => Ok(RegisterRefMut::Byte(&mut self.h)),
+            0b101 => Ok(RegisterRefMut::Byte(&mut self.l)),
+            _=> Err(RegisterError::InvalidLookupInput)
         }
     }
+
+    // fn at(&self, index: RegisterType) -> RegisterRef {
+    //     match index {
+    //         RegisterType::A => RegisterRef::Byte(&self.a),
+    //         RegisterType::B => RegisterRef::Byte(&self.b),
+    //         RegisterType::C => RegisterRef::Byte(&self.c),
+    //         RegisterType::D => RegisterRef::Byte(&self.d),
+    //         RegisterType::E => RegisterRef::Byte(&self.e),
+    //         RegisterType::H => RegisterRef::Byte(&self.f),
+    //         RegisterType::L => RegisterRef::Byte(&self.l),
+    //         RegisterType::F => RegisterRef::Flag(&self.f),
+    //         RegisterType::PC => RegisterRef::PC(&self.pc),
+    //         RegisterType::SP => RegisterRef::SP(&self.sp),
+    //     }
+    // }
 }
 
 impl Display for Registers {

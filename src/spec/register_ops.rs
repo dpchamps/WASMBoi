@@ -125,7 +125,7 @@ where
         let c = self.value.full_carry_sub(&value);
         let flags = FlagRegister::new(z, n, h, c);
 
-        RegisterOpResult::new(result, FlagRegister::default())
+        RegisterOpResult::new(result, flags)
     }
 }
 

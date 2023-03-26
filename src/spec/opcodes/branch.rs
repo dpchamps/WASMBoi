@@ -40,7 +40,10 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::RET => {
-                unimplemented!()
+                let stack_val = self.pop_stack_word(mmu)?;
+                self.registers.pc.set_value(stack_val);
+
+                Ok(4)
             }
             Instruction::RET_F => {
                 unimplemented!()

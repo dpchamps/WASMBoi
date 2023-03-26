@@ -15,6 +15,8 @@ pub trait TCPU {
 pub trait TStackable {
     fn push_stack_byte(&mut self, value: u8, mmu: &mut MMU) -> Result<(), Error>;
     fn push_stack_word(&mut self, value: u16, mmu: &mut MMU) -> Result<(), Error>;
+    fn pop_stack_byte(&mut self, mmu: &mut MMU) -> Result<u8, Error>;
+    fn pop_stack_word(&mut self, mmu: &mut MMU) -> Result<u16, Error>;
 }
 
 pub struct CPU {
@@ -79,10 +81,25 @@ impl TStackable for CPU {
         self.registers
             .sp
             .update_value_checked(|sp| {
-                mmu.write_word(*sp, value)?;
+                mmu.write_word(*sp-1, value)?;
                 Ok(sp.checked_sub(2))
             })
             .map_err(Error::RegisterError)
+    }
+
+    fn pop_stack_byte(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
+        unimplemented!()
+    }
+
+    fn pop_stack_word(&mut self, mmu: &mut MMU) -> Result<u16, Error> {
+        let stack_val = mmu.read_word(*self.registers.sp.get_value()+1)?;
+        self.registers
+            .sp
+            .update_value_checked(|sp| {
+                Ok(sp.checked_add(2))
+            })?;
+
+        Ok(stack_val)
     }
 }
 

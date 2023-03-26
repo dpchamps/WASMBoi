@@ -5,7 +5,7 @@ use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
-use crate::spec::register::TRegister;
+use crate::spec::register::{RegisterRefMut, TRegister};
 use crate::util::byte_ops::hi_lo_combine;
 
 impl CPU {
@@ -20,7 +20,13 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::LD_RN => {
-                unimplemented!()
+                match self.registers.reg_from_byte(instruction_data.byte_data.lhs)? {
+                    RegisterRefMut::Byte(byte_ref) => {
+                        byte_ref.set_value(opcode_data[0]);
+                        Ok(2)
+                    },
+                    _ => Err(Error::UnexpectedOpcodeState(instruction_data.clone(), hi_lo_combine(opcode_data[1], opcode_data[0])))
+                }
             }
             Instruction::LD_RHL => {
                 unimplemented!()
@@ -50,10 +56,15 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::LD_NA => {
-                unimplemented!()
+                let address = 0xFF00+(opcode_data[0] as u16);
+                mmu.write_byte(address, *self.registers.a.get_value())?;
+
+                Ok(3)
             }
             Instruction::LD_NNA => {
-                unimplemented!()
+                let address = hi_lo_combine(opcode_data[1], opcode_data[0]);
+                mmu.write_byte(address, *self.registers.a.get_value())?;
+                Ok(4)
             }
             Instruction::LD_AFF00C => {
                 unimplemented!()

@@ -7,10 +7,11 @@ use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
-use crate::spec::register::{RegisterType, TRegister};
-use crate::spec::register_ops::RegisterOp;
+use crate::spec::register::{RegisterError, RegisterRefMut, RegisterType, TRegister};
+use crate::spec::register_ops::{RegisterOp, RegisterOpResult};
 use crate::util::byte_ops::hi_lo_combine;
 use std::num::Wrapping;
+use std::ops::Add;
 
 impl CPU {
     pub(crate) fn evaluate_alu(
@@ -42,7 +43,12 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::SUB_N => {
-                unimplemented!()
+                let result = self.registers.op(|registers| {
+                    RegisterOp::new(*registers.a.get_value()).sub(opcode_data[0])
+                });
+
+                self.registers.a.set_value(result);
+                Ok(2)
             }
             Instruction::SUB_HL => {
                 unimplemented!()
@@ -96,7 +102,20 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::INC_R => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let byte_reg = registers.reg_from_byte(instruction_data.byte_data.lhs)?;
+
+                    match byte_reg {
+                        RegisterRefMut::Byte(reg) => {
+                            let reg_op = RegisterOp::new(*reg.get_value()).add(1);
+                            reg.set_value(reg_op.value);
+                            Ok(reg_op)
+                        },
+                        _ => Err(RegisterError::InvalidLookupInput)
+                    }
+                })?;
+
+                Ok(1)
             }
             Instruction::INC_HL => {
                 unimplemented!()

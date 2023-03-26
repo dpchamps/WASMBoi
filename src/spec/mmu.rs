@@ -90,6 +90,7 @@ impl MMU {
                 };
 
                 Ok(self.internal_ram[(mirrored_address-0xC000) as usize])
+
             },
             0xFEA0..=0xFEFF => {
                 Err(Error::UnusableWriteRegion)
@@ -132,7 +133,7 @@ impl MMU {
                 unimplemented!("io reg")
             },
             0xFF80..=0xFFFE => {
-                self.hi_ram[(address - 0xFF80) as usize];
+                self.hi_ram[(address - 0xFF80) as usize] = value;
                 Ok(())
             },
             0xFFFF => {
@@ -148,8 +149,9 @@ impl MMU {
     pub fn read_word(&self, address: u16) -> Result<u16, Error> {
         let rhs = self.read_byte(address)? as u16;
         let lhs = self.read_byte(address + 1)? as u16;
+        let value = (lhs << 8) | rhs;
 
-        Ok((lhs << 0xFF) | rhs)
+        Ok(value)
     }
 
     pub fn write_word(&mut self, address: u16, value: u16) -> Result<(), Error> {
