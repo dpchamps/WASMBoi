@@ -5,6 +5,8 @@ use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
+use crate::spec::register::TRegister;
+use crate::spec::register_ops::RegisterOp;
 
 impl CPU {
     pub(crate) fn evaluate_bitwise(
@@ -15,13 +17,24 @@ impl CPU {
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::RLCA => {
-                unimplemented!()
+                let value = self.registers.op(|registers| {
+                    RegisterOp::new(*registers.a.get_value()).rotate_left(1)
+                });
+
+                self.registers.a.set_value(value);
+                Ok(1)
             }
             Instruction::RLA => {
                 unimplemented!()
             }
             Instruction::RRCA => {
-                unimplemented!()
+                let value = self.registers.op(|registers| {
+                    RegisterOp::new(*registers.a.get_value()).rotate_right(1)
+                });
+
+                self.registers.a.set_value(value);
+
+                Ok(1)
             }
             Instruction::RRA => {
                 unimplemented!()

@@ -127,6 +127,32 @@ where
 
         RegisterOpResult::new(result, flags)
     }
+
+    pub fn rotate_left(&self, value: T) -> RegisterOpResult<T> {
+
+        let c = self.value.bitand(T::from(0b10000000).unwrap()) == T::from(1).unwrap();
+
+        let result = self.value.rotate_left(cast(value).unwrap());
+
+        let z = false;
+        let n = false;
+        let h = false;
+
+        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
+    }
+
+    pub fn rotate_right(&self, value: T) -> RegisterOpResult<T> {
+
+        let c = self.value.bitand(T::from(1).unwrap()) == T::from(1).unwrap();
+
+        let result = self.value.rotate_right(cast(value).unwrap());
+
+        let z = false;
+        let n = false;
+        let h = false;
+
+        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
+    }
 }
 
 impl<T> RegisterOpResult<T>

@@ -22,7 +22,15 @@ impl CPU {
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::ADD_AR => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let op = RegisterOp::new(*registers.a.get_value()).add(instruction_data.byte_data.rhs);
+
+                    registers.a.set_value(op.value);
+
+                    Ok(op)
+                })?;
+
+                Ok(1)
             }
             Instruction::ADD_AN => {
                 unimplemented!()
@@ -43,11 +51,14 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::SUB_N => {
-                let result = self.registers.op(|registers| {
-                    RegisterOp::new(*registers.a.get_value()).sub(opcode_data[0])
-                });
+                self.registers.op_with_effect(|registers| {
+                    let op_result = RegisterOp::new(*registers.a.get_value()).sub(opcode_data[0]);
 
-                self.registers.a.set_value(result);
+                    registers.a.set_value(op_result.value);
+
+                    Ok(op_result)
+                })?;
+
                 Ok(2)
             }
             Instruction::SUB_HL => {

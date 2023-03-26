@@ -61,7 +61,10 @@ pub struct MMU {
     mbc: Box<dyn Mbc>,
     enable_interrupts: u8,
     internal_ram: Box<[u8]>,
-    hi_ram: Box<[u8]>
+    hi_ram: Box<[u8]>,
+    // TODO: hw registers implemented as a solid block of mem. Pick these off into
+    //  separate datastructures as needed.
+    hw_registers: Box<[u8]>
 }
 
 impl MMU {
@@ -70,7 +73,8 @@ impl MMU {
             mbc: Self::create_mbc_from_type(cart_type, game_data),
             enable_interrupts: 0,
             internal_ram: Box::from([0; 0xE000-0xC000]),
-            hi_ram: Box::from([0; 0xFFFF-0xFF80])
+            hi_ram: Box::from([0; 0xFFFF-0xFF80]),
+            hw_registers: Box::from([0; 0xFFFE-0xFF00])
         })
     }
 
@@ -96,7 +100,8 @@ impl MMU {
                 Err(Error::UnusableWriteRegion)
             },
             0xFF00..=0xFF7F => {
-                unimplemented!("io reg")
+                // writing the apu, joypad, printer, interrupt flags, timers
+                Ok(self.hw_registers[(address-0xFF00) as usize])
             },
             0xFF80..=0xFFFE => {
                 Ok(self.hi_ram[(address-0xFF80) as usize])
@@ -130,7 +135,8 @@ impl MMU {
                 Err(Error::UnusableWriteRegion)
             },
             0xFF00..=0xFF7F => {
-                unimplemented!("io reg")
+                self.hw_registers[(address-0xFF00) as usize] = value;
+                Ok(())
             },
             0xFF80..=0xFFFE => {
                 self.hi_ram[(address - 0xFF80) as usize] = value;
