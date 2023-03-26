@@ -20,9 +20,7 @@ impl CPU {
             Instruction::SCF => {
                 unimplemented!()
             }
-            Instruction::NOP => {
-                Ok(1)
-            }
+            Instruction::NOP => Ok(1),
             Instruction::HALT => {
                 unimplemented!()
             }

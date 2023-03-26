@@ -32,7 +32,7 @@ pub enum Error {
     MmuError(MmuError),
     DecodeError(DasmError),
     RegisterError(RegisterError),
-    UnexpectedOpcodeState(InstructionData, u16)
+    UnexpectedOpcodeState(InstructionData, u16),
 }
 
 impl From<RegisterError> for Error {
@@ -81,7 +81,7 @@ impl TStackable for CPU {
         self.registers
             .sp
             .update_value_checked(|sp| {
-                mmu.write_word(*sp-1, value)?;
+                mmu.write_word(*sp - 1, value)?;
                 Ok(sp.checked_sub(2))
             })
             .map_err(Error::RegisterError)
@@ -92,12 +92,10 @@ impl TStackable for CPU {
     }
 
     fn pop_stack_word(&mut self, mmu: &mut MMU) -> Result<u16, Error> {
-        let stack_val = mmu.read_word(*self.registers.sp.get_value()+1)?;
+        let stack_val = mmu.read_word(*self.registers.sp.get_value() + 1)?;
         self.registers
             .sp
-            .update_value_checked(|sp| {
-                Ok(sp.checked_add(2))
-            })?;
+            .update_value_checked(|sp| Ok(sp.checked_add(2)))?;
 
         Ok(stack_val)
     }

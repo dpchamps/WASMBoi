@@ -1,3 +1,4 @@
+use crate::spec::cpu::Error;
 use crate::spec::mmu::Error as MmuError;
 use crate::spec::register_ops::{CarryFlags, RegisterOp, RegisterOpResult};
 use crate::util::byte_ops::*;
@@ -7,7 +8,6 @@ use num_integer::Integer;
 use std::fmt::{Binary, Display, Formatter, UpperHex};
 use std::num::Wrapping;
 use std::ops::Index;
-use crate::spec::cpu::Error;
 
 #[derive(Debug)]
 pub enum RegisterError {
@@ -188,7 +188,7 @@ impl Registers {
             0b011 => Ok(RegisterRefMut::Byte(&mut self.e)),
             0b100 => Ok(RegisterRefMut::Byte(&mut self.h)),
             0b101 => Ok(RegisterRefMut::Byte(&mut self.l)),
-            _=> Err(RegisterError::InvalidLookupInput)
+            _ => Err(RegisterError::InvalidLookupInput),
         }
     }
 

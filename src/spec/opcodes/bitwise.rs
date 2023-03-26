@@ -17,9 +17,9 @@ impl CPU {
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::RLCA => {
-                let value = self.registers.op(|registers| {
-                    RegisterOp::new(*registers.a.get_value()).rotate_left(1)
-                });
+                let value = self
+                    .registers
+                    .op(|registers| RegisterOp::new(*registers.a.get_value()).rotate_left(1));
 
                 self.registers.a.set_value(value);
                 Ok(1)
@@ -28,9 +28,9 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::RRCA => {
-                let value = self.registers.op(|registers| {
-                    RegisterOp::new(*registers.a.get_value()).rotate_right(1)
-                });
+                let value = self
+                    .registers
+                    .op(|registers| RegisterOp::new(*registers.a.get_value()).rotate_right(1));
 
                 self.registers.a.set_value(value);
 

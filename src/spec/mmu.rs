@@ -1,8 +1,8 @@
 #![allow(non_camel_case_types)]
+use crate::mbc::rom::Rom;
+use crate::mbc::{mbc1::Mbc1, Mbc, MbcError};
 use crate::spec::cartridge_header::{Cartridge, CartridgeType};
 use crate::spec::mmu::Error::CreateError;
-use crate::mbc::{ Mbc, mbc1::Mbc1, MbcError};
-use crate::mbc::rom::Rom;
 
 #[derive(Debug)]
 pub enum Error {
@@ -10,7 +10,7 @@ pub enum Error {
     ReadError,
     WriteError,
     MBCError(MbcError),
-    UnusableWriteRegion
+    UnusableWriteRegion,
 }
 
 impl From<MbcError> for Error {
@@ -33,7 +33,9 @@ pub enum MbcType {
 impl From<&CartridgeType> for MbcType {
     fn from(cart_type: &CartridgeType) -> Self {
         match cart_type {
-            CartridgeType::ROM | CartridgeType::ROM_RAM | CartridgeType::ROM_RAM_BAT => MbcType::Rom,
+            CartridgeType::ROM | CartridgeType::ROM_RAM | CartridgeType::ROM_RAM_BAT => {
+                MbcType::Rom
+            }
             CartridgeType::MBC1 | CartridgeType::MBC1_RAM | CartridgeType::MBC1_RAM_BAT => {
                 MbcType::Mbc1
             }
@@ -56,7 +58,6 @@ impl From<&CartridgeType> for MbcType {
     }
 }
 
-
 pub struct MMU {
     mbc: Box<dyn Mbc>,
     enable_interrupts: u8,
@@ -64,7 +65,7 @@ pub struct MMU {
     hi_ram: Box<[u8]>,
     // TODO: hw registers implemented as a solid block of mem. Pick these off into
     //  separate datastructures as needed.
-    hw_registers: Box<[u8]>
+    hw_registers: Box<[u8]>,
 }
 
 impl MMU {
@@ -72,9 +73,9 @@ impl MMU {
         Ok(MMU {
             mbc: Self::create_mbc_from_type(cart_type, game_data),
             enable_interrupts: 0,
-            internal_ram: Box::from([0; 0xE000-0xC000]),
-            hi_ram: Box::from([0; 0xFFFF-0xFF80]),
-            hw_registers: Box::from([0; 0xFFFE-0xFF00])
+            internal_ram: Box::from([0; 0xE000 - 0xC000]),
+            hi_ram: Box::from([0; 0xFFFF - 0xFF80]),
+            hw_registers: Box::from([0; 0xFFFE - 0xFF00]),
         })
     }
 
@@ -83,33 +84,26 @@ impl MMU {
             0x8000..=0x9FFF => {
                 // VIDEO RAM
                 unimplemented!("video ram")
-            },
+            }
             0xC000..=0xFDFF => {
                 // Internal work ram
                 // Note 0xE000-0xFDFF is mirror ram
                 let mirrored_address = if address >= 0xE000 {
-                    address-(0xE000-0xC000)
+                    address - (0xE000 - 0xC000)
                 } else {
                     address
                 };
 
-                Ok(self.internal_ram[(mirrored_address-0xC000) as usize])
-
-            },
-            0xFEA0..=0xFEFF => {
-                Err(Error::UnusableWriteRegion)
-            },
+                Ok(self.internal_ram[(mirrored_address - 0xC000) as usize])
+            }
+            0xFEA0..=0xFEFF => Err(Error::UnusableWriteRegion),
             0xFF00..=0xFF7F => {
                 // writing the apu, joypad, printer, interrupt flags, timers
-                Ok(self.hw_registers[(address-0xFF00) as usize])
-            },
-            0xFF80..=0xFFFE => {
-                Ok(self.hi_ram[(address-0xFF80) as usize])
-            },
-            0xFFFF => {
-                Ok(self.enable_interrupts)
-            },
-            _ => self.mbc.map_read(address).map_err(Error::MBCError)
+                Ok(self.hw_registers[(address - 0xFF00) as usize])
+            }
+            0xFF80..=0xFFFE => Ok(self.hi_ram[(address - 0xFF80) as usize]),
+            0xFFFF => Ok(self.enable_interrupts),
+            _ => self.mbc.map_read(address).map_err(Error::MBCError),
         }
     }
 
@@ -118,37 +112,33 @@ impl MMU {
             0x8000..=0x9FFF => {
                 // VIDEO RAM
                 unimplemented!("video ram")
-            },
+            }
             0xC000..=0xFDFF => {
                 // Internal work ram
                 // Note 0xE000-0xFDFF is mirror ram
                 let mirrored_address = if address >= 0xE000 {
-                    address-(0xE000-0xC000)
+                    address - (0xE000 - 0xC000)
                 } else {
                     address
                 };
 
                 self.internal_ram[(mirrored_address - 0xC000) as usize] = value;
                 Ok(())
-            },
-            0xFEA0..=0xFEFF => {
-                Err(Error::UnusableWriteRegion)
-            },
+            }
+            0xFEA0..=0xFEFF => Err(Error::UnusableWriteRegion),
             0xFF00..=0xFF7F => {
-                self.hw_registers[(address-0xFF00) as usize] = value;
+                self.hw_registers[(address - 0xFF00) as usize] = value;
                 Ok(())
-            },
+            }
             0xFF80..=0xFFFE => {
                 self.hi_ram[(address - 0xFF80) as usize] = value;
                 Ok(())
-            },
+            }
             0xFFFF => {
                 self.enable_interrupts = value;
                 Ok(())
-            },
-            _ => {
-                self.mbc.map_write(address, value).map_err(Error::MBCError)
             }
+            _ => self.mbc.map_write(address, value).map_err(Error::MBCError),
         }
     }
 

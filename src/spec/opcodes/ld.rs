@@ -20,12 +20,18 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::LD_RN => {
-                match self.registers.reg_from_byte(instruction_data.byte_data.lhs)? {
+                match self
+                    .registers
+                    .reg_from_byte(instruction_data.byte_data.lhs)?
+                {
                     RegisterRefMut::Byte(byte_ref) => {
                         byte_ref.set_value(opcode_data[0]);
                         Ok(2)
-                    },
-                    _ => Err(Error::UnexpectedOpcodeState(instruction_data.clone(), hi_lo_combine(opcode_data[1], opcode_data[0])))
+                    }
+                    _ => Err(Error::UnexpectedOpcodeState(
+                        instruction_data.clone(),
+                        hi_lo_combine(opcode_data[1], opcode_data[0]),
+                    )),
                 }
             }
             Instruction::LD_RHL => {
@@ -56,7 +62,7 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::LD_NA => {
-                let address = 0xFF00+(opcode_data[0] as u16);
+                let address = 0xFF00 + (opcode_data[0] as u16);
                 mmu.write_byte(address, *self.registers.a.get_value())?;
 
                 Ok(3)
@@ -92,22 +98,27 @@ impl CPU {
                         // BC
                         self.registers.b.set_value(opcode_data[0]);
                         self.registers.c.set_value(opcode_data[1]);
-                    },
+                    }
                     0b01 => {
                         // DE
                         self.registers.d.set_value(opcode_data[0]);
                         self.registers.e.set_value(opcode_data[1]);
-                    },
+                    }
                     0b10 => {
                         // HL
                         self.registers.h.set_value(opcode_data[0]);
                         self.registers.l.set_value(opcode_data[1]);
-                    },
+                    }
                     0b11 => {
-                        self.registers.sp.set_value(hi_lo_combine(opcode_data[1], opcode_data[0]));
+                        self.registers
+                            .sp
+                            .set_value(hi_lo_combine(opcode_data[1], opcode_data[0]));
                     }
                     _ => {
-                        return Err(Error::UnexpectedOpcodeState(instruction_data.clone(), dd as u16))
+                        return Err(Error::UnexpectedOpcodeState(
+                            instruction_data.clone(),
+                            dd as u16,
+                        ))
                     }
                 }
 

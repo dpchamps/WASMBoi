@@ -23,7 +23,8 @@ impl CPU {
         match instruction_data.instruction {
             Instruction::ADD_AR => {
                 self.registers.op_with_effect(|registers| {
-                    let op = RegisterOp::new(*registers.a.get_value()).add(instruction_data.byte_data.rhs);
+                    let op = RegisterOp::new(*registers.a.get_value())
+                        .add(instruction_data.byte_data.rhs);
 
                     registers.a.set_value(op.value);
 
@@ -121,8 +122,8 @@ impl CPU {
                             let reg_op = RegisterOp::new(*reg.get_value()).add(1);
                             reg.set_value(reg_op.value);
                             Ok(reg_op)
-                        },
-                        _ => Err(RegisterError::InvalidLookupInput)
+                        }
+                        _ => Err(RegisterError::InvalidLookupInput),
                     }
                 })?;
 
