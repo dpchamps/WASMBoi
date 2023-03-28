@@ -166,12 +166,12 @@ impl MMU {
         match MbcType::from(cart_type) {
             MbcType::Rom => Box::new(Rom::new(data)),
             MbcType::Mbc1 => Box::new(Mbc1::new(data)),
-            MbcType::Mbc2 => unimplemented!(),
-            MbcType::Mbc3 => unimplemented!(),
-            MbcType::Mbc4 => unimplemented!(),
-            MbcType::Mbc5 => unimplemented!(),
-            MbcType::Mbc5Rumble => unimplemented!(),
-            MbcType::Mmm => unimplemented!(),
+            MbcType::Mbc2 => unimplemented!("MBC2"),
+            MbcType::Mbc3 => unimplemented!("MBC3"),
+            MbcType::Mbc4 => unimplemented!("MBC4"),
+            MbcType::Mbc5 => unimplemented!("MBC5"),
+            MbcType::Mbc5Rumble => unimplemented!("MBC5Rumble"),
+            MbcType::Mmm => unimplemented!("MMM"),
         }
     }
 }
