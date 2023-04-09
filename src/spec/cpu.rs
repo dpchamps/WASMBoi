@@ -6,6 +6,7 @@ use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::*;
 use crate::spec::register::{RegisterError, Registers, TRegister};
 use std::convert::TryFrom;
+use std::num::Wrapping;
 
 pub trait TCPU {
     type E;
@@ -51,16 +52,27 @@ impl TCPU for CPU {
     type E = Error;
 
     fn tick(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
-        let buf: Vec<u8> = Vec::new();
+        let last_pc = *self.registers.pc.get_value();
         let opcode = self.fetch(mmu)?;
         let data = [
             mmu.read_byte(*self.registers.pc.get_value())
                 .map_err(Error::MmuError)?,
-            mmu.read_byte(*self.registers.pc.get_value() + 1)
+            mmu.read_byte((Wrapping(*self.registers.pc.get_value()) + Wrapping(1)).0)
                 .map_err(Error::MmuError)?,
         ];
-
+        // println!(
+        //     "[PC: {:#X}] Op: {}, Dat: [{:X?}]",
+        //     last_pc,
+        //     opcode,
+        //     data
+        // );
+        self.registers.pc.set_value(*self.registers.pc.get_value()+opcode.size as u16);
         let cycles = self.execute(&opcode, &data, mmu)?;
+        // println!("\t{}", self.registers);
+        // if *self.registers.pc.get_value() == 0xCBB0 {
+        //     panic!()
+        // }
+
 
         Ok(cycles)
     }
@@ -114,19 +126,13 @@ impl CPU {
 
     fn fetch(&mut self, mmu: &MMU) -> Result<InstructionData, Error> {
         let pc = self.increment_pc()?;
-        let op = {
-            let op = mmu.read_byte(pc).map_err(Error::MmuError)?;
-
-            match op {
-                0xCB => {
-                    self.increment_pc()?;
-                    mmu.read_byte(pc).map_err(Error::MmuError)?
-                }
-                _ => op,
-            }
+        let op = mmu.read_byte(pc).map_err(Error::MmuError)?;
+        let cb_byte = match op {
+            0xCB => Some(mmu.read_byte(pc+1).map_err(Error::MmuError)?),
+            _ => None
         };
 
-        InstructionData::try_from(op).map_err(Error::DecodeError)
+        InstructionData::try_from((op, cb_byte)).map_err(Error::DecodeError)
     }
 
     fn execute(
@@ -135,12 +141,6 @@ impl CPU {
         opcode_data: &[u8; 2],
         mmu: &mut MMU,
     ) -> Result<u8, Error> {
-        println!(
-            "[PC: {:#X}] Opcode: {}, Data: [{:X?}]",
-            self.registers.pc.get_value(),
-            instruction_data,
-            opcode_data
-        );
         let result = match instruction_data.mnemonic {
             Mnemonic::LD | Mnemonic::LDHL => self.evaluate_ld(instruction_data, opcode_data, mmu),
             Mnemonic::PUSH | Mnemonic::POP => {
@@ -169,6 +169,7 @@ impl CPU {
             | Mnemonic::SLA
             | Mnemonic::SWAP
             | Mnemonic::SRA
+            | Mnemonic::SET
             | Mnemonic::SRL => self.evaluate_bitwise(instruction_data, opcode_data, mmu),
             Mnemonic::CCF
             | Mnemonic::SCF
@@ -190,7 +191,6 @@ impl CPU {
                 instruction_data.instruction.clone(),
             )),
         }?;
-        println!("\t{}", self.registers);
         Ok(result)
     }
 

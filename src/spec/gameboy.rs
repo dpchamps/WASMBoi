@@ -77,12 +77,23 @@ impl GameBoy {
             .pc
             .set_value(self.cartridge.start_address);
 
-        // for _ in 0..20 {
+        // for _ in 0..100_000 {
         //     self.cycle()?
         // }
 
+        let mut last_char = ' ';
+
         loop {
-            self.cycle()?
+            self.cycle()?;
+
+            let sc = self.mmu.read_byte(0xFF02)?;
+            let c = self.mmu.read_byte(0xFF01)? as char;
+
+            //
+            if sc == 0x81 && last_char != c {
+                print!("{}", c);
+                last_char = c;
+            }
         }
 
         Ok(())

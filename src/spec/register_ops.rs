@@ -7,24 +7,39 @@ use crate::spec::cpu::Error::Default;
 use num::traits::{WrappingAdd, WrappingSub};
 use num::{cast, PrimInt as Integer};
 use std::ops;
+use crate::util::byte_ops::hi_lo_combine;
 
-struct Flags {
-    z: u8,
-    n: u8,
-    h: u8,
-    c: u8,
+#[derive(Clone)]
+pub struct Flags {
+    pub z: u8,
+    pub n: u8,
+    pub h: u8,
+    pub c: u8,
 }
 
 impl From<&FlagRegister> for Flags {
     fn from(fr: &FlagRegister) -> Self {
+        Flags::from(fr.0)
+    }
+}
+
+impl From<u8> for Flags {
+    fn from(byte: u8) -> Self {
         Flags {
-            z: (fr.0 & 0b1000) >> 3,
-            n: (fr.0 & 0b0100) >> 2,
-            h: (fr.0 & 0b0010) >> 1,
-            c: (fr.0 & 0b0001),
+            z: (byte & 0b1000) >> 3,
+            n: (byte & 0b0100) >> 2,
+            h: (byte & 0b0010) >> 1,
+            c: (byte & 0b0001),
         }
     }
 }
+
+impl From<Flags> for FlagRegister {
+    fn from(flags: Flags) -> Self {
+        FlagRegister::new(flags.z != 0, flags.n != 0, flags.h != 0, flags.c != 0)
+    }
+}
+
 
 #[derive(Default, PartialEq, Eq, Debug)]
 pub struct FlagRegister(pub u8);
@@ -35,13 +50,23 @@ impl FlagRegister {
     }
 
     pub fn new(z: bool, n: bool, h: bool, c: bool) -> Self {
-        FlagRegister(((z as u8) << 3) | ((h as u8) << 2) | ((n as u8) << 1) | (c as u8))
+        FlagRegister(((z as u8) << 3) | ((n as u8) << 2) | ((h as u8) << 1) | (c as u8))
+    }
+
+    pub fn update<F>(&mut self, mut f: F)
+    where F: FnMut(Flags) -> Flags
+    {
+        let flags = Flags::from(self.0);
+        self.0 = FlagRegister::from(f(flags)).get_value();
     }
 }
 
 pub trait CarryFlags {
     fn half_carry_add(&self, other: &Self) -> bool;
     fn half_carry_sub(&self, other: &Self) -> bool;
+    fn half_carry<F>(&self, value: &Self, f:F) -> bool
+    where
+        F: FnMut((Self, Self)) -> Self, Self:Sized;
     fn full_carry_add(&self, other: &Self) -> bool;
     fn full_carry_sub(&self, other: &Self) -> bool;
 }
@@ -53,6 +78,13 @@ impl CarryFlags for u8 {
 
     fn half_carry_sub(&self, other: &Self) -> bool {
         ((((*self as i8) & 0xF) - ((*other as i8) & 0xF)) & 0x10) == 0x10
+    }
+
+    fn half_carry<F>(&self, value: &Self, mut f: F) -> bool
+    where
+        F: FnMut((Self, Self)) -> Self, Self: Sized
+    {
+        f((*self & 0xf, *value & 0xF)) == 0x10
     }
 
     fn full_carry_add(&self, other: &Self) -> bool {
@@ -73,12 +105,19 @@ impl CarryFlags for u16 {
         (((self & 0xFFF) - (other & 0xFFF)) & 0x1000) == 0x1000
     }
 
+    fn half_carry<F>(&self, value: &Self, mut f: F) -> bool
+        where
+            F: FnMut((Self, Self)) -> Self
+    {
+        f((*self & 0xFFF, *value & 0xFFF)) == 0x1000
+    }
+
     fn full_carry_add(&self, other: &Self) -> bool {
         self.checked_add(*other).map(|_| false).unwrap_or(true)
     }
 
     fn full_carry_sub(&self, other: &Self) -> bool {
-        self.checked_add(*other).map(|_| false).unwrap_or(true)
+        self.checked_sub(*other).map(|_| false).unwrap_or(true)
     }
 }
 
@@ -105,7 +144,6 @@ where
 
     pub fn add(&self, value: T) -> RegisterOpResult<T> {
         let result = self.value.wrapping_add(&value);
-        let primitive_value = cast(result).unwrap_or(u16::MAX);
 
         let z = cast(result).unwrap_or(1) == 0;
         let n = false;
@@ -141,6 +179,8 @@ where
     }
 
     pub fn rotate_right(&self, value: T) -> RegisterOpResult<T> {
+        // value & 1 == 1
+        // 0b0001 -> 0b1000
         let c = self.value.bitand(T::from(1).unwrap()) == T::from(1).unwrap();
 
         let result = self.value.rotate_right(cast(value).unwrap());
@@ -148,6 +188,69 @@ where
         let z = false;
         let n = false;
         let h = false;
+
+        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
+    }
+
+    pub fn or(&self, value: T) -> RegisterOpResult<T> {
+        let result = self.value.bitor(value);
+
+        let z = result == T::from(0).unwrap();
+        let n = false;
+        let h = false;
+        let c = false;
+
+        RegisterOpResult::new(result, FlagRegister::new(z,n,h, c))
+    }
+
+    pub fn and(&self, value: T) -> RegisterOpResult<T> {
+        let result = self.value.bitand(value);
+
+        let z = result == T::from(0).unwrap();
+        let n = false;
+        let h = true;
+        let c = false;
+
+        RegisterOpResult::new(result, FlagRegister::new(z,n,h, c))
+    }
+
+    pub fn xor(&self, value: T) -> RegisterOpResult<T> {
+        let result = self.value.bitxor(value);
+
+        let z = result == T::from(0).unwrap();
+        let n = false;
+        let h = false;
+        let c = false;
+
+        RegisterOpResult::new(result, FlagRegister::new(z,n,h, c))
+    }
+}
+
+impl RegisterOp<u8> {
+    pub fn swap(&self) -> RegisterOpResult<u8> {
+        let hi = self.value >> 4;
+        let lo = self.value & 0b1111;
+        let result = lo << 4 | hi;
+
+        let z = self.value == 0;
+        let n = false;
+        let h = false;
+        let c = false;
+
+        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
+    }
+}
+
+impl RegisterOp<u16> {
+    pub fn swap(&self) -> RegisterOpResult<u16> {
+        let hi = self.value >> 8;
+        let lo = self.value & 0xF;
+        let result = hi_lo_combine(lo as u8, hi as u8);
+
+        let z = self.value == 0;
+        let n = false;
+        let h = false;
+        let c = false;
 
         RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
     }

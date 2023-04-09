@@ -1,3 +1,4 @@
+use std::num::Wrapping;
 use crate::dasm::InstructionData;
 use crate::spec::clock::Clock;
 use crate::spec::cpu::*;
@@ -6,7 +7,7 @@ use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::{RegisterRefMut, TRegister};
-use crate::util::byte_ops::hi_lo_combine;
+use crate::util::byte_ops::{extract_hi_lo, hi_lo_combine};
 
 impl CPU {
     pub(crate) fn evaluate_ld(
@@ -17,7 +18,13 @@ impl CPU {
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::LD_RR => {
-                unimplemented!()
+                let r_prime_value = self.registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
+                let mut r = self.registers.reg_from_byte(instruction_data.byte_data.lhs)?;
+                // println!("\t\t {:?} <- {:X}", r, r_prime_value);
+
+                r.set_eight_bit_val(r_prime_value)?;
+
+                Ok(1)
             }
             Instruction::LD_RN => {
                 match self
@@ -25,6 +32,7 @@ impl CPU {
                     .reg_from_byte(instruction_data.byte_data.lhs)?
                 {
                     RegisterRefMut::Byte(byte_ref) => {
+                        // println!("\t\t {:?} <- {:X}", byte_ref, opcode_data[0]);
                         byte_ref.set_value(opcode_data[0]);
                         Ok(2)
                     }
@@ -35,10 +43,18 @@ impl CPU {
                 }
             }
             Instruction::LD_RHL => {
-                unimplemented!()
+                let value = mmu.read_byte(self.registers.hl())?;
+                let mut reg = self.registers.reg_from_byte(instruction_data.byte_data.lhs)?;
+
+                reg.set_eight_bit_val(value)?;
+
+                Ok(2)
             }
             Instruction::LD_HLR => {
-                unimplemented!()
+                let reg_r_value = self.registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
+                mmu.write_byte(self.registers.hl(), reg_r_value)?;
+
+                Ok(2)
             }
             Instruction::LD_HLN => {
                 unimplemented!()
@@ -47,19 +63,30 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::LD_ADE => {
-                unimplemented!()
+                let value = mmu.read_byte(self.registers.de())?;
+                self.registers.a.set_value(value);
+
+                Ok(2)
             }
             Instruction::LD_AN => {
-                unimplemented!()
+                let value = mmu.read_byte(0xFF00+(opcode_data[0] as u16))?;
+
+                self.registers.a.set_value(value);
+                Ok(3)
             }
             Instruction::LD_ANN => {
-                unimplemented!()
+                let value = mmu.read_byte(hi_lo_combine(opcode_data[1], opcode_data[0]))?;
+
+                self.registers.a.set_value(value);
+
+                Ok(4)
             }
             Instruction::LD_BCA => {
                 unimplemented!()
             }
             Instruction::LD_DEA => {
-                unimplemented!()
+                mmu.write_byte(self.registers.de(), *self.registers.a.get_value())?;
+                Ok(2)
             }
             Instruction::LD_NA => {
                 let address = 0xFF00 + (opcode_data[0] as u16);
@@ -79,53 +106,53 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::LD_HLIA => {
-                unimplemented!()
+                let hl = self.registers.hl();
+                mmu.write_byte(hl, *self.registers.a.get_value())?;
+                let next_hl = Wrapping(hl) + Wrapping(1);
+                self.registers.hl_mut().set_value_16(next_hl.0);
+
+                Ok(2)
             }
             Instruction::LD_AHLI => {
-                unimplemented!()
+                let hl = self.registers.hl();
+                let value = mmu.read_byte(hl)?;
+                let next_hl = Wrapping(hl) + Wrapping(1);
+
+                self.registers.a.set_value(value);
+                self.registers.hl_mut().set_value_16(next_hl.0);
+
+                Ok(2)
             }
             Instruction::LD_HLDA => {
-                unimplemented!()
+                let hl = self.registers.hl();
+                mmu.write_byte(hl, *self.registers.a.get_value())?;
+                let next_hl = Wrapping(hl) - Wrapping(1);
+                self.registers.hl_mut().set_value_16(next_hl.0);
+
+                Ok(2)
             }
             Instruction::LD_AHLD => {
                 unimplemented!()
             }
             Instruction::LD_RRNN => {
                 let dd = instruction_data.byte_data.lhs >> 1;
+                let mut reg_pair = self.registers.reg_pair_from_dd(dd)?;
+                // println!("\t\t{:?} <- {:X?}", reg_pair, opcode_data);
 
-                match dd {
-                    0b00 => {
-                        // BC
-                        self.registers.b.set_value(opcode_data[0]);
-                        self.registers.c.set_value(opcode_data[1]);
-                    }
-                    0b01 => {
-                        // DE
-                        self.registers.d.set_value(opcode_data[0]);
-                        self.registers.e.set_value(opcode_data[1]);
-                    }
-                    0b10 => {
-                        // HL
-                        self.registers.h.set_value(opcode_data[0]);
-                        self.registers.l.set_value(opcode_data[1]);
-                    }
-                    0b11 => {
-                        self.registers
-                            .sp
-                            .set_value(hi_lo_combine(opcode_data[1], opcode_data[0]));
-                    }
-                    _ => {
-                        return Err(Error::UnexpectedOpcodeState(
-                            instruction_data.clone(),
-                            dd as u16,
-                        ))
-                    }
-                }
+                reg_pair.set_value(opcode_data[1], opcode_data[0]);
 
                 Ok(3)
             }
             Instruction::LD_SPHL => {
-                unimplemented!()
+                self.registers.sp.set_value(self.registers.hl());
+
+                Ok(2)
+            },
+            Instruction::LD_SPDD => {
+                let address = hi_lo_combine(opcode_data[1], opcode_data[0]);
+                mmu.write_word(address, *self.registers.sp.get_value())?;
+
+                Ok(5)
             }
             _ => Err(unexpected_op(&instruction_data.mnemonic, &Mnemonic::LD)),
         }

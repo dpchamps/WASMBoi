@@ -6,7 +6,7 @@ use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::TRegister;
-use crate::spec::register_ops::RegisterOp;
+use crate::spec::register_ops::{FlagRegister, Flags, RegisterOp, RegisterOpResult};
 
 impl CPU {
     pub(crate) fn evaluate_bitwise(
@@ -37,7 +37,19 @@ impl CPU {
                 Ok(1)
             }
             Instruction::RRA => {
-                unimplemented!()
+                // 0b10000001, cy = 0, carry_flag = 0
+                //  0b11000000, cy = 1 (0b01111111 | carry_flag) & value
+                // 0b01000000, cy = 1
+                let carry_flag = (self.registers.flag_register().z << 7) | 0x7F;
+                let value = self
+                    .registers
+                    .op(|registers| {
+                        RegisterOp::new(*registers.a.get_value()).rotate_right(1)
+                    });
+
+                self.registers.a.set_value(carry_flag & value);
+
+                Ok(1)
             }
             Instruction::RLC_R => {
                 unimplemented!()
@@ -58,7 +70,16 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::RR_R => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let mut reg = registers.reg_from_byte(instruction_data.byte_data.rhs)?;
+                    let result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_right(1);
+
+                    reg.set_eight_bit_val(result.value)?;
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::RR_HL => {
                 unimplemented!()
@@ -70,10 +91,28 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::SWAP_R => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let mut reg = registers.reg_from_byte(instruction_data.byte_data.rhs)?;
+                    let result = RegisterOp::new(reg.get_eight_bit_val()?).swap();
+
+                    reg.set_eight_bit_val(result.value)?;
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::SWAP_HL => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let mut reg = registers.reg_from_byte(instruction_data.byte_data.rhs)?;
+                    let result = RegisterOp::new(reg.get_sixtn_bit_val()?).swap();
+
+                    reg.set_sixtn_bit_val(result.value)?;
+
+                    Ok(result)
+                })?;
+
+                Ok(4)
             }
             Instruction::SRA_R => {
                 unimplemented!()
@@ -82,7 +121,16 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::SRL_R => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let mut reg = registers.reg_from_byte(instruction_data.byte_data.rhs)?;
+                    let result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_right(1);
+
+                    reg.set_eight_bit_val(0b01111111 & result.value)?;
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::SRL_HL => {
                 unimplemented!()
@@ -94,7 +142,12 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::SET_NR => {
-                unimplemented!()
+                let bit = 1 << instruction_data.byte_data.lhs;
+                let mut reg = self.registers.reg_from_byte(instruction_data.byte_data.rhs)?;
+
+                reg.set_eight_bit_val(reg.get_eight_bit_val()? | bit)?;
+
+                Ok(2)
             }
             Instruction::SET_NHL => {
                 unimplemented!()

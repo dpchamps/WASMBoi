@@ -1,6 +1,6 @@
 use crate::spec::cpu::Error;
 use crate::spec::mmu::Error as MmuError;
-use crate::spec::register_ops::{CarryFlags, RegisterOp, RegisterOpResult};
+use crate::spec::register_ops::{CarryFlags, FlagRegister, Flags, RegisterOp, RegisterOpResult};
 use crate::util::byte_ops::*;
 use num::traits::{WrappingAdd, WrappingSub};
 use num::PrimInt;
@@ -29,16 +29,15 @@ pub trait TRegister<'a> {
     where
         F: for<'b> FnMut(&'b Self::ValueType) -> Result<Option<Self::ValueType>, RegisterError>;
 
-    fn update_value_wrapped<F>()
+    fn update_value_wrapped<F>(&'a mut self, f: F)
     where
-        F: for<'b> FnMut(Wrapping<&'b Self::ValueType>) -> Self::ValueType;
+        F: FnMut(Wrapping<Self::ValueType>) -> Wrapping<Self::ValueType>;
 
     fn get_value(&'a self) -> &'a Self::ValueType;
 
     fn set_value(&mut self, value: Self::ValueType);
 }
 
-pub trait FlagRegister {}
 
 #[derive(Debug)]
 pub struct Register<T: Default> {
@@ -59,11 +58,12 @@ impl<'a, T: 'a + Default + PrimInt> TRegister<'a> for Register<T> {
         Ok(())
     }
 
-    fn update_value_wrapped<F>()
+    fn update_value_wrapped<F>(&'a mut self, mut f: F)
     where
-        F: for<'b> FnMut(Wrapping<&'b Self::ValueType>) -> Self::ValueType,
+        F: FnMut(Wrapping<Self::ValueType>) -> Wrapping<Self::ValueType>,
     {
-        unimplemented!()
+        let result = f(Wrapping(self.value)).0;
+        self.value = result;
     }
 
     fn get_value(&'a self) -> &'a Self::ValueType {
@@ -103,6 +103,94 @@ pub enum RegisterRefMut<'a> {
     SP(&'a mut Register<u16>),
 }
 
+impl<'a> RegisterRefMut<'a> {
+    pub fn set_eight_bit_val(&mut self, value: u8) -> Result<(), RegisterError> {
+        match self {
+            RegisterRefMut::Byte(byte_reg) => {
+                byte_reg.set_value(value);
+                Ok(())
+            },
+            RegisterRefMut::Flag(flag_reg) => {
+                flag_reg.set_value(value);
+                Ok(())
+            },
+            _ => Err(RegisterError::CheckedFailure)
+        }
+    }
+
+    pub fn set_sixtn_bit_val(&mut self, value: u16) -> Result<(), RegisterError> {
+        match self {
+            RegisterRefMut::SP(stack_pointer) => {
+                stack_pointer.set_value(value);
+                Ok(())
+            },
+            RegisterRefMut::PC(pc) => {
+                pc.set_value(value);
+                Ok(())
+            }
+            _ => Err(RegisterError::CheckedFailure)
+        }
+    }
+
+    pub fn get_eight_bit_val(&self) -> Result<u8, RegisterError> {
+        match self {
+            RegisterRefMut::Byte(byte_reg) => {
+                Ok(*byte_reg.get_value())
+            },
+            RegisterRefMut::Flag(flag_reg) => {
+                Ok(*flag_reg.get_value())
+            },
+            _ => Err(RegisterError::CheckedFailure)
+        }
+    }
+
+    pub fn get_sixtn_bit_val(&self) -> Result<u16, RegisterError> {
+        match self {
+            RegisterRefMut::SP(stack_pointer) => {
+                Ok(*stack_pointer.get_value())
+            },
+            RegisterRefMut::PC(pc) => {
+                Ok(*pc.get_value())
+            }
+            _ => Err(RegisterError::CheckedFailure)
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum RegisterPair<'a>{
+    EightBit(&'a mut Register<u8>, &'a mut Register<u8>),
+    SixteenBit(&'a mut Register<u16>)
+}
+
+impl<'a> RegisterPair<'a> {
+    pub fn set_value(&mut self, lhs: u8, rhs: u8){
+        match self {
+            RegisterPair::EightBit(lhs_reg, rhs_reg) => {
+                lhs_reg.set_value(lhs);
+                rhs_reg.set_value(rhs)
+            },
+            RegisterPair::SixteenBit(reg) => {
+                reg.set_value(hi_lo_combine(lhs, rhs))
+            }
+        }
+    }
+
+    pub fn set_value_16(&mut self, value: u16){
+        let lhs = ((value & 0xFF00) >> 8) as u8;
+        let rhs = (value & 0x00FF) as u8;
+
+        self.set_value(lhs, rhs)
+    }
+
+    pub fn get_value(&self) -> u16 {
+        match self {
+            RegisterPair::EightBit(lhs, rhs) => hi_lo_combine(lhs.value, rhs.value),
+            RegisterPair::SixteenBit(reg) => reg.value
+        }
+    }
+}
+
 /// TODO: Implement Display Trait for Registers
 #[derive(Debug)]
 pub struct Registers {
@@ -134,12 +222,16 @@ impl Registers {
         }
     }
 
+    pub fn flag_register(&self) -> Flags {
+        Flags::from(&FlagRegister(self.f.value))
+    }
+
     pub fn bc(&self) -> u16 {
         hi_lo_combine(self.b.value, self.c.value)
     }
 
     pub fn de(&self) -> u16 {
-        hi_lo_combine(self.d.value, self.c.value)
+        hi_lo_combine(self.d.value, self.e.value)
     }
 
     pub fn hl(&self) -> u16 {
@@ -148,6 +240,22 @@ impl Registers {
 
     pub fn af(&self) -> u16 {
         hi_lo_combine(self.a.value, self.f.value)
+    }
+
+    pub fn bc_mut(&mut self) -> RegisterPair {
+        RegisterPair::EightBit(&mut self.b, &mut self.c)
+    }
+
+    pub fn de_mut(&mut self) -> RegisterPair {
+        RegisterPair::EightBit(&mut self.d, &mut self.e)
+    }
+
+    pub fn hl_mut(&mut self) -> RegisterPair {
+        RegisterPair::EightBit(&mut self.h, &mut self.l)
+    }
+
+    pub fn af_mut(&mut self) -> RegisterPair {
+        RegisterPair::EightBit(&mut self.a, &mut self.f)
     }
 
     pub fn update<F>(&mut self, mut f: F)
@@ -192,6 +300,51 @@ impl Registers {
         }
     }
 
+    pub fn reg_pair_from_dd(&mut self, value: u8) -> Result<RegisterPair, RegisterError> {
+        match value {
+            0b00 => {
+                // BC
+                Ok(RegisterPair::EightBit(&mut self.b, &mut self.c))
+            }
+            0b01 => {
+                // DE
+                Ok(RegisterPair::EightBit(&mut self.d, &mut self.e))
+            }
+            0b10 => {
+                // HL
+                Ok(RegisterPair::EightBit(&mut self.h, &mut self.l))
+
+            }
+            0b11 => {
+                Ok(RegisterPair::SixteenBit(&mut self.sp))
+            }
+            _ => Err(RegisterError::InvalidLookupInput)
+        }
+    }
+
+    pub fn reg_pair_from_qq(&mut self, value: u8) -> Result<RegisterPair, RegisterError> {
+        match value {
+            // AF
+            0b11 => Ok(RegisterPair::EightBit(&mut self.a, &mut self.f)),
+            _ => self.reg_pair_from_dd(value)
+        }
+    }
+
+    pub fn jump_condition(&self, cc: u8) -> Result<bool, RegisterError> {
+        let flags = self.flag_register();
+        match cc {
+            // NZ
+            0b00 => Ok(flags.z == 0),
+            // Z
+            0b01 => Ok(flags.z == 1),
+            // NC
+            0b10 => Ok(flags.c == 0),
+            // C
+            0b11 => Ok(flags.c == 1),
+            _ => Err(RegisterError::InvalidLookupInput)
+        }
+    }
+
     // fn at(&self, index: RegisterType) -> RegisterRef {
     //     match index {
     //         RegisterType::A => RegisterRef::Byte(&self.a),
@@ -212,11 +365,12 @@ impl Display for Registers {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Registers[{} {} {} {} {} {} {} {} {}, BC: {:X}, DE: {:X}, HL: {:X}, AF: {:X}]",
+            "Registers[{} {} {} {} {} {} {} {} {} {}, BC: {:X}, DE: {:X}, HL: {:X}, AF: {:X}]",
             self.a,
             self.b,
             self.c,
             self.d,
+            self.e,
             self.h,
             self.l,
             self.f,

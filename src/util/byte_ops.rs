@@ -27,6 +27,13 @@ pub fn hi_lo_combine(hi: u8, lo: u8) -> u16 {
     left_shift(hi) | (lo as u16)
 }
 
+pub fn extract_hi_lo(value: u16) -> [u8; 2] {
+    let lo = value & 0xFF;
+    let hi = value >> 8;
+
+    [lo as u8, hi as u8]
+}
+
 pub fn extract_lhs(byte: u8) -> u8 {
     (byte & LHS_MASK) >> 3
 }

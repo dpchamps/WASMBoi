@@ -61,7 +61,7 @@ impl From<&CartridgeType> for MbcType {
 pub struct MMU {
     mbc: Box<dyn Mbc>,
     enable_interrupts: u8,
-    internal_ram: Box<[u8]>,
+    pub internal_ram: Box<[u8]>,
     hi_ram: Box<[u8]>,
     // TODO: hw registers implemented as a solid block of mem. Pick these off into
     //  separate datastructures as needed.
@@ -83,7 +83,7 @@ impl MMU {
         match address {
             0x8000..=0x9FFF => {
                 // VIDEO RAM
-                unimplemented!("video ram")
+                Ok(0)
             }
             0xC000..=0xFDFF => {
                 // Internal work ram
@@ -96,22 +96,27 @@ impl MMU {
 
                 Ok(self.internal_ram[(mirrored_address - 0xC000) as usize])
             }
-            0xFEA0..=0xFEFF => Err(Error::UnusableWriteRegion),
+            0xFEA0..=0xFEFF => Ok(0),
             0xFF00..=0xFF7F => {
                 // writing the apu, joypad, printer, interrupt flags, timers
+                // println!("\t\tReading from hw register {:X}", address);
                 Ok(self.hw_registers[(address - 0xFF00) as usize])
             }
             0xFF80..=0xFFFE => Ok(self.hi_ram[(address - 0xFF80) as usize]),
             0xFFFF => Ok(self.enable_interrupts),
-            _ => self.mbc.map_read(address).map_err(Error::MBCError),
+            _ => {
+                self.mbc.map_read(address).or_else(|_| {
+                    panic!("Attempt to read from an unknown address {:X}", address)
+                })
+            },
         }
     }
 
     pub fn write_byte(&mut self, address: u16, value: u8) -> Result<(), Error> {
         match address {
             0x8000..=0x9FFF => {
-                // VIDEO RAM
-                unimplemented!("video ram")
+                // VIDEO RAM unimplemented
+                Ok(())
             }
             0xC000..=0xFDFF => {
                 // Internal work ram
@@ -121,12 +126,14 @@ impl MMU {
                 } else {
                     address
                 };
+                // println!("\t\t Writing internal ram ({:X}){:X}<-{:X}", address, mirrored_address - 0xC000, value);
 
                 self.internal_ram[(mirrored_address - 0xC000) as usize] = value;
                 Ok(())
             }
-            0xFEA0..=0xFEFF => Err(Error::UnusableWriteRegion),
+            0xFEA0..=0xFEFF => Ok(()),
             0xFF00..=0xFF7F => {
+                // println!("\t\tWriting to hw register {:X} <- {:X}", address, value);
                 self.hw_registers[(address - 0xFF00) as usize] = value;
                 Ok(())
             }
@@ -138,7 +145,11 @@ impl MMU {
                 self.enable_interrupts = value;
                 Ok(())
             }
-            _ => self.mbc.map_write(address, value).map_err(Error::MBCError),
+            _ => {
+                self.mbc.map_write(address, value).or_else(|_| {
+                    panic!("Attempt to write to an unknown address {:X} <- {:X}", address, value)
+                })
+            },
         }
     }
 

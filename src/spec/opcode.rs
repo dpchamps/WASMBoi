@@ -218,7 +218,9 @@ impl Instruction {
             | Instruction::RLA
             | Instruction::RRCA
             | Instruction::UNIMPLEMENTED
-            | Instruction::RRA => 0,
+            | Instruction::RRA
+
+            => 0,
 
             Instruction::ADD_AN
             | Instruction::ADD_SPN
@@ -532,7 +534,11 @@ pub fn cb_prefix_instruction_lookup(byte: u8) -> OpcodeLookupResult {
     }
 }
 
-pub fn instruction_lookup(byte: u8) -> OpcodeLookupResult {
+pub fn instruction_lookup(byte: u8, cb_byte: Option<u8>) -> OpcodeLookupResult {
+    if let Some(cb_byte) = cb_byte {
+        return cb_prefix_instruction_lookup(cb_byte)
+    }
+
     match byte {
         0x0 => Ok(Instruction::NOP),
         0x1 => Ok(Instruction::LD_RRNN),
@@ -568,7 +574,7 @@ pub fn instruction_lookup(byte: u8) -> OpcodeLookupResult {
         0x1F => Ok(Instruction::RRA),
         0x20 => Ok(Instruction::JR_FPCDD),
         0x21 => Ok(Instruction::LD_RRNN),
-        0x22 => Ok(Instruction::LD_HLDA),
+        0x22 => Ok(Instruction::LD_HLIA),
         0x23 => Ok(Instruction::INC_RR),
         0x24 => Ok(Instruction::INC_R),
         0x25 => Ok(Instruction::DEC_R),
@@ -737,7 +743,7 @@ pub fn instruction_lookup(byte: u8) -> OpcodeLookupResult {
         0xC8 => Ok(Instruction::RET_F),
         0xC9 => Ok(Instruction::RET),
         0xCA => Ok(Instruction::JP_FNN),
-        0xCB => cb_prefix_instruction_lookup(byte),
+        0xCB => unreachable!(),
         0xCC => Ok(Instruction::CALL_FNN),
         0xCD => Ok(Instruction::CALL_NN),
         0xCE => Ok(Instruction::ADC_AN),
@@ -782,3 +788,4 @@ pub fn instruction_lookup(byte: u8) -> OpcodeLookupResult {
         _ => Err(OpcodeError::InvalidOpcodeInput),
     }
 }
+

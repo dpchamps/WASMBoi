@@ -50,20 +50,20 @@ pub struct InstructionData {
     pub byte_data: ByteData,
 }
 
-impl TryFrom<u8> for InstructionData {
+impl TryFrom<(u8, Option<u8>)> for InstructionData {
     type Error = DasmError;
 
-    fn try_from(byte: u8) -> Result<Self, Self::Error> {
-        let instruction = match instruction_lookup(byte) {
+    fn try_from((byte, maybe_cb_byte): (u8, Option<u8>)) -> Result<Self, Self::Error> {
+        let instruction = match instruction_lookup(byte, maybe_cb_byte) {
             Ok(instruction) => instruction,
             _ => Instruction::UNIMPLEMENTED,
         };
         let mnemonic = Mnemonic::from(&instruction);
         let size = Instruction::get_size(&instruction);
-        let byte_data = ByteData::from(byte);
+        let byte_data = maybe_cb_byte.map(ByteData::from).unwrap_or(ByteData::from(byte));
 
         Ok(InstructionData {
-            byte,
+            byte: maybe_cb_byte.unwrap_or(byte),
             instruction,
             size,
             mnemonic,

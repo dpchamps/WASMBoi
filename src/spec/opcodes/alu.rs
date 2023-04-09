@@ -8,7 +8,7 @@ use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::{RegisterError, RegisterRefMut, RegisterType, TRegister};
-use crate::spec::register_ops::{RegisterOp, RegisterOpResult};
+use crate::spec::register_ops::{Flags, RegisterOp, RegisterOpResult};
 use crate::util::byte_ops::hi_lo_combine;
 use std::num::Wrapping;
 use std::ops::Add;
@@ -23,8 +23,9 @@ impl CPU {
         match instruction_data.instruction {
             Instruction::ADD_AR => {
                 self.registers.op_with_effect(|registers| {
+                    let reg_r_val = registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
                     let op = RegisterOp::new(*registers.a.get_value())
-                        .add(instruction_data.byte_data.rhs);
+                        .add(reg_r_val);
 
                     registers.a.set_value(op.value);
 
@@ -34,7 +35,13 @@ impl CPU {
                 Ok(1)
             }
             Instruction::ADD_AN => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::new(*registers.a.get_value()).add(opcode_data[0]);
+                    registers.a.set_value(result.value);
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::ADD_AHL => {
                 unimplemented!()
@@ -43,7 +50,21 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::ADC_AN => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let mut result = RegisterOp::new(*registers.a.get_value()).add(opcode_data[0] + registers.flag_register().z);
+                    registers.a.set_value(result.value);
+
+                    result.flags.update(|flags| {
+                        let mut next_flags = flags.clone();
+                        next_flags.n = 0;
+
+                        next_flags
+                    });
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::ADC_AHL => {
                 unimplemented!()
@@ -78,28 +99,71 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::AND_N => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::new(*registers.a.get_value()).and(opcode_data[0]);
+
+                    registers.a.set_value(result.value);
+
+                    Ok(result)
+                })?;
+                Ok(2)
             }
             Instruction::AND_HL => {
                 unimplemented!()
             }
             Instruction::XOR_R => {
-                unimplemented!()
+                let reg_r_value = self.registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::new(*registers.a.get_value()).xor(reg_r_value);
+                    registers.a.set_value(result.value);
+                    Ok(result)
+                })?;
+
+                Ok(1)
             }
             Instruction::XOR_N => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::new(*registers.a.get_value()).xor(opcode_data[0]);
+                    registers.a.set_value(result.value);
+                    Ok(result)
+                })?;
+
+                Ok(1)
             }
             Instruction::XOR_HL => {
-                unimplemented!()
+                let value = mmu.read_byte(self.registers.hl())?;
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::new(*registers.a.get_value()).xor(value);
+
+                    registers.a.set_value(result.value);
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::OR_R => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers|{
+                    let mut reg_r_val = registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
+                    let result = RegisterOp::new(*registers.a.get_value()).or(reg_r_val);
+
+                    registers.a.set_value(result.value);
+                    Ok(result)
+                })?;
+
+                Ok(1)
             }
             Instruction::OR_N => {
                 unimplemented!()
             }
             Instruction::OR_HL => {
-                unimplemented!()
+                let value = mmu.read_byte(self.registers.hl())?;
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::new(*registers.a.get_value()).or(value);
+                    registers.a.set_value(result.value);
+
+                    Ok(result)
+                })?;
+                Ok(2)
             }
             Instruction::CP_R => {
                 unimplemented!()
@@ -133,10 +197,32 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::DEC_R => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let byte_reg = registers.reg_from_byte(instruction_data.byte_data.lhs)?;
+
+                    match byte_reg {
+                        RegisterRefMut::Byte(reg) => {
+                            let reg_op = RegisterOp::new(*reg.get_value()).sub(1);
+                            reg.set_value(reg_op.value);
+                            Ok(reg_op)
+                        }
+                        _ => Err(RegisterError::InvalidLookupInput),
+                    }
+                })?;
+
+
+                Ok(1)
             }
             Instruction::DEC_HL => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::new(registers.hl()).sub(1);
+
+                    registers.hl_mut().set_value_16(result.value);
+
+                    Ok(result)
+                })?;
+
+                Ok(3)
             }
             Instruction::DAA => {
                 unimplemented!()
@@ -145,13 +231,31 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::ADD_HLRR => {
-                unimplemented!()
+                let dd = instruction_data.byte_data.lhs >> 1;
+                let reg_value = self.registers.reg_pair_from_dd(dd)?.get_value();
+                self.registers.op_with_effect(|register| {
+                    let mut hl = register.hl_mut();
+                    let result = RegisterOp::new(hl.get_value()).add(reg_value);
+
+                    // println!("\t\t {:X?} <- {:X} ({:X} + {:X})", hl, result.value, hl.get_value(), reg_value);
+
+                    hl.set_value_16(result.value);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::ADD_SPN => {
                 unimplemented!()
             }
             Instruction::INC_RR => {
-                unimplemented!()
+                let dd = instruction_data.byte_data.lhs >> 1;
+                let mut reg_pair = self.registers.reg_pair_from_dd(dd)?;
+                let result = Wrapping(reg_pair.get_value()) + Wrapping(1);
+
+                reg_pair.set_value_16(result.0);
+                Ok(2)
             }
             Instruction::DEC_RR => {
                 unimplemented!()
