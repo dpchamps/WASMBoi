@@ -1,5 +1,6 @@
 use crate::mbc::{Mbc, MbcError};
 use std::num::Wrapping;
+use crate::spec::memory_region::MemoryRegion;
 
 #[derive(Default)]
 pub struct Mbc1 {
@@ -29,7 +30,10 @@ impl Mbc1 {
     }
 }
 
-impl Mbc for Mbc1 {
+impl Mbc for Mbc1 {}
+
+impl MemoryRegion for Mbc1 {
+    type Error = MbcError;
     fn map_read(&self, address: u16) -> Result<u8, MbcError> {
         match address {
             0..=0x3FFF => Ok(self.rom[address as usize]),

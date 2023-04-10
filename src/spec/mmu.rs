@@ -2,6 +2,8 @@
 use crate::mbc::rom::Rom;
 use crate::mbc::{mbc1::Mbc1, Mbc, MbcError};
 use crate::spec::cartridge_header::{Cartridge, CartridgeType};
+use crate::spec::hardware_registers::{HardwareRegister, HardwareRegisterError};
+use crate::spec::memory_region::MemoryRegion;
 use crate::spec::mmu::Error::CreateError;
 
 #[derive(Debug)]
@@ -10,12 +12,19 @@ pub enum Error {
     ReadError,
     WriteError,
     MBCError(MbcError),
+    HWError(HardwareRegisterError),
     UnusableWriteRegion,
 }
 
 impl From<MbcError> for Error {
     fn from(e: MbcError) -> Self {
         Error::MBCError(e)
+    }
+}
+
+impl From<HardwareRegisterError> for Error {
+    fn from(e: HardwareRegisterError) -> Self {
+        Error::HWError(e)
     }
 }
 
@@ -65,7 +74,7 @@ pub struct MMU {
     hi_ram: Box<[u8]>,
     // TODO: hw registers implemented as a solid block of mem. Pick these off into
     //  separate datastructures as needed.
-    hw_registers: Box<[u8]>,
+    hw_registers: HardwareRegister,
 }
 
 impl MMU {
@@ -75,7 +84,7 @@ impl MMU {
             enable_interrupts: 0,
             internal_ram: Box::from([0; 0xE000 - 0xC000]),
             hi_ram: Box::from([0; 0xFFFF - 0xFF80]),
-            hw_registers: Box::from([0; 0xFFFE - 0xFF00]),
+            hw_registers: HardwareRegister::default(),
         })
     }
 
@@ -97,11 +106,7 @@ impl MMU {
                 Ok(self.internal_ram[(mirrored_address - 0xC000) as usize])
             }
             0xFEA0..=0xFEFF => Ok(0),
-            0xFF00..=0xFF7F => {
-                // writing the apu, joypad, printer, interrupt flags, timers
-                // println!("\t\tReading from hw register {:X}", address);
-                Ok(self.hw_registers[(address - 0xFF00) as usize])
-            }
+            0xFF00..=0xFF7F => Ok(self.hw_registers.map_read(address)?),
             0xFF80..=0xFFFE => Ok(self.hi_ram[(address - 0xFF80) as usize]),
             0xFFFF => Ok(self.enable_interrupts),
             _ => self
@@ -131,11 +136,7 @@ impl MMU {
                 Ok(())
             }
             0xFEA0..=0xFEFF => Ok(()),
-            0xFF00..=0xFF7F => {
-                // println!("\t\tWriting to hw register {:X} <- {:X}", address, value);
-                self.hw_registers[(address - 0xFF00) as usize] = value;
-                Ok(())
-            }
+            0xFF00..=0xFF7F => Ok(self.hw_registers.map_write(address, value)?),
             0xFF80..=0xFFFE => {
                 self.hi_ram[(address - 0xFF80) as usize] = value;
                 Ok(())

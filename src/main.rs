@@ -27,7 +27,7 @@ fn main() {
     gameboy.attach_peripheral(Peripheral::SerialPort(Box::new(|c| {
         if env::var("SERIAL_PORT_STDOUT").unwrap_or("false".into()) == "true" {
             if let Some(x) = c {
-            print!("{}", x)
+                print!("{}", x)
             }
         }
     })));

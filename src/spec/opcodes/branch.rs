@@ -63,10 +63,11 @@ impl CPU {
                         // println!("\t\t\t PC{:X?}", result);
                         Ok(result)
                     })?;
+
+                    return Ok(3);
                 }
 
-                // TODO[FractionClockCycle]: 3/2
-                Ok(3)
+                Ok(2)
             }
             Instruction::CALL_NN => {
                 self.push_stack_word(*self.registers.pc.get_value(), mmu)?;
@@ -84,10 +85,11 @@ impl CPU {
                     self.registers
                         .pc
                         .set_value(hi_lo_combine(opcode_data[1], opcode_data[0]));
+
+                    return Ok(6);
                 }
 
-                // TODO[FractionClockCycle]: 6/3
-                Ok(2)
+                Ok(3)
             }
             Instruction::RET => {
                 let stack_val = self.pop_stack_word(mmu)?;
@@ -101,9 +103,11 @@ impl CPU {
                 if self.registers.jump_condition(cc)? {
                     let stack_val = self.pop_stack_word(mmu)?;
                     self.registers.pc.set_value(stack_val);
+
+                    return Ok(4);
                 }
-                // TODO[FractionClockCycle]: 4/3
-                Ok(1)
+
+                Ok(3)
             }
             Instruction::RETI => {
                 let stack_val = self.pop_stack_word(mmu)?;

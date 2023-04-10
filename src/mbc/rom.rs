@@ -1,4 +1,5 @@
 use crate::mbc::{Mbc, MbcError};
+use crate::spec::memory_region::MemoryRegion;
 
 #[derive(Default)]
 pub struct Rom {
@@ -15,7 +16,11 @@ impl Rom {
     }
 }
 
-impl Mbc for Rom {
+impl Mbc for Rom{}
+
+impl MemoryRegion for Rom {
+    type Error = MbcError;
+
     fn map_read(&self, address: u16) -> Result<u8, MbcError> {
         match address {
             0x0000..=0x7FFF => Ok(self.rom[address as usize]),

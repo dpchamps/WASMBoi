@@ -7,6 +7,8 @@ pub mod mmu;
 pub mod mnemonic;
 pub mod opcode;
 pub mod register;
+pub mod hardware_registers;
+pub mod memory_region;
 
 mod opcodes;
 mod register_ops;
