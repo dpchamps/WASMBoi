@@ -1,4 +1,3 @@
-use std::num::Wrapping;
 use crate::dasm::InstructionData;
 use crate::spec::clock::Clock;
 use crate::spec::cpu::{Error, TStackable, CPU};
@@ -8,6 +7,7 @@ use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::TRegister;
 use crate::util::byte_ops::hi_lo_combine;
+use std::num::Wrapping;
 
 impl CPU {
     pub(crate) fn evaluate_branch(
@@ -38,7 +38,6 @@ impl CPU {
                     return Ok(4);
                 }
 
-
                 Ok(3)
             }
             Instruction::JR_PCDD => {
@@ -60,7 +59,7 @@ impl CPU {
 
                     // println!("\t\tPC:{:X}+{} ({})", *self.registers.pc.get_value() as i16, data as i8, val);
                     self.registers.pc.update_value_checked(|last| {
-                        let result = ((*last ) as i16).checked_add(val).map(|x| x as u16);
+                        let result = ((*last) as i16).checked_add(val).map(|x| x as u16);
                         // println!("\t\t\t PC{:X?}", result);
                         Ok(result)
                     })?;
@@ -71,7 +70,9 @@ impl CPU {
             }
             Instruction::CALL_NN => {
                 self.push_stack_word(*self.registers.pc.get_value(), mmu)?;
-                self.registers.pc.set_value(hi_lo_combine(opcode_data[1], opcode_data[0]));
+                self.registers
+                    .pc
+                    .set_value(hi_lo_combine(opcode_data[1], opcode_data[0]));
 
                 Ok(6)
             }
@@ -80,7 +81,9 @@ impl CPU {
 
                 if self.registers.jump_condition(cc)? {
                     self.push_stack_word(*self.registers.pc.get_value(), mmu)?;
-                    self.registers.pc.set_value(hi_lo_combine(opcode_data[1], opcode_data[0]));
+                    self.registers
+                        .pc
+                        .set_value(hi_lo_combine(opcode_data[1], opcode_data[0]));
                 }
 
                 // TODO[FractionClockCycle]: 6/3

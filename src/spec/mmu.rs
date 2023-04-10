@@ -104,11 +104,10 @@ impl MMU {
             }
             0xFF80..=0xFFFE => Ok(self.hi_ram[(address - 0xFF80) as usize]),
             0xFFFF => Ok(self.enable_interrupts),
-            _ => {
-                self.mbc.map_read(address).or_else(|_| {
-                    panic!("Attempt to read from an unknown address {:X}", address)
-                })
-            },
+            _ => self
+                .mbc
+                .map_read(address)
+                .or_else(|_| panic!("Attempt to read from an unknown address {:X}", address)),
         }
     }
 
@@ -145,11 +144,12 @@ impl MMU {
                 self.enable_interrupts = value;
                 Ok(())
             }
-            _ => {
-                self.mbc.map_write(address, value).or_else(|_| {
-                    panic!("Attempt to write to an unknown address {:X} <- {:X}", address, value)
-                })
-            },
+            _ => self.mbc.map_write(address, value).or_else(|_| {
+                panic!(
+                    "Attempt to write to an unknown address {:X} <- {:X}",
+                    address, value
+                )
+            }),
         }
     }
 

@@ -23,9 +23,10 @@ impl CPU {
         match instruction_data.instruction {
             Instruction::ADD_AR => {
                 self.registers.op_with_effect(|registers| {
-                    let reg_r_val = registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
-                    let op = RegisterOp::new(*registers.a.get_value())
-                        .add(reg_r_val);
+                    let reg_r_val = registers
+                        .reg_from_byte(instruction_data.byte_data.rhs)?
+                        .get_eight_bit_val()?;
+                    let op = RegisterOp::new(*registers.a.get_value()).add(reg_r_val);
 
                     registers.a.set_value(op.value);
 
@@ -51,7 +52,8 @@ impl CPU {
             }
             Instruction::ADC_AN => {
                 self.registers.op_with_effect(|registers| {
-                    let mut result = RegisterOp::new(*registers.a.get_value()).add(opcode_data[0] + registers.flag_register().z);
+                    let mut result = RegisterOp::new(*registers.a.get_value())
+                        .add(opcode_data[0] + registers.flag_register().z);
                     registers.a.set_value(result.value);
 
                     result.flags.update(|flags| {
@@ -112,7 +114,10 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::XOR_R => {
-                let reg_r_value = self.registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
+                let reg_r_value = self
+                    .registers
+                    .reg_from_byte(instruction_data.byte_data.rhs)?
+                    .get_eight_bit_val()?;
                 self.registers.op_with_effect(|registers| {
                     let result = RegisterOp::new(*registers.a.get_value()).xor(reg_r_value);
                     registers.a.set_value(result.value);
@@ -142,8 +147,10 @@ impl CPU {
                 Ok(2)
             }
             Instruction::OR_R => {
-                self.registers.op_with_effect(|registers|{
-                    let mut reg_r_val = registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
+                self.registers.op_with_effect(|registers| {
+                    let mut reg_r_val = registers
+                        .reg_from_byte(instruction_data.byte_data.rhs)?
+                        .get_eight_bit_val()?;
                     let result = RegisterOp::new(*registers.a.get_value()).or(reg_r_val);
 
                     registers.a.set_value(result.value);
@@ -166,8 +173,12 @@ impl CPU {
                 Ok(2)
             }
             Instruction::CP_R => {
-                let value = self.registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
-                self.registers.op(|registers| RegisterOp::new(*registers.a.get_value()).sub(value));
+                let value = self
+                    .registers
+                    .reg_from_byte(instruction_data.byte_data.rhs)?
+                    .get_eight_bit_val()?;
+                self.registers
+                    .op(|registers| RegisterOp::new(*registers.a.get_value()).sub(value));
 
                 Ok(1)
             }
@@ -180,7 +191,8 @@ impl CPU {
             Instruction::CP_HL => {
                 let value = mmu.read_byte(self.registers.hl())?;
 
-                self.registers.op(|registers| RegisterOp::new(*registers.a.get_value()).sub(value));
+                self.registers
+                    .op(|registers| RegisterOp::new(*registers.a.get_value()).sub(value));
 
                 Ok(2)
             }
@@ -217,7 +229,6 @@ impl CPU {
                     }
                 })?;
 
-
                 Ok(1)
             }
             Instruction::DEC_HL => {
@@ -245,7 +256,7 @@ impl CPU {
                         if flags.h != 0 || (a_value & 0x0f) > 0x09 {
                             a_value = (Wrapping(a_value) + Wrapping(0x6)).0;
                         }
-                    },
+                    }
                     _ => {
                         if flags.c != 0 {
                             a_value = (Wrapping(a_value) - Wrapping(0x60)).0;
@@ -265,7 +276,6 @@ impl CPU {
 
                 // println!("\t -> {:?} {}", self.registers.flag_register(), self.registers.a);
 
-
                 Ok(1)
             }
             Instruction::CPL => {
@@ -273,7 +283,9 @@ impl CPU {
                 let a_value = *self.registers.a.get_value();
 
                 self.registers.a.set_value(!a_value);
-                self.registers.f.set_value(FlagRegister::new(flags.z != 0, true, true, false).0);
+                self.registers
+                    .f
+                    .set_value(FlagRegister::new(flags.z != 0, true, true, false).0);
 
                 Ok(1)
             }
@@ -295,10 +307,13 @@ impl CPU {
             }
             Instruction::ADD_SPN => {
                 self.registers.op_with_effect(|registers| {
-                    let mut result = RegisterOp::new(*registers.sp.get_value()).add(opcode_data[0] as u16);
+                    let mut result =
+                        RegisterOp::new(*registers.sp.get_value()).add(opcode_data[0] as u16);
                     registers.sp.set_value(result.value);
 
-                    result.flags.set_bits(FlagRegister::new(false, false, true, true));
+                    result
+                        .flags
+                        .set_bits(FlagRegister::new(false, false, true, true));
 
                     Ok(result)
                 })?;
@@ -318,12 +333,13 @@ impl CPU {
                     let mut reg_pair = registers.reg_pair_from_dd(dd)?;
                     let mut result = RegisterOp::new(reg_pair.get_value()).sub(1);
 
-                    result.flags.set_bits(FlagRegister::new(true, false, false, false));
+                    result
+                        .flags
+                        .set_bits(FlagRegister::new(true, false, false, false));
                     reg_pair.set_value_16(result.value);
 
                     Ok(result)
                 })?;
-
 
                 Ok(2)
             }

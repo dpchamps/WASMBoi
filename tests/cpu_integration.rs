@@ -1,4 +1,4 @@
 #[test]
-fn test_cpu(){
+fn test_cpu() {
     assert_eq!(true, true)
 }

@@ -4,11 +4,17 @@ use crate::spec::cpu::{Error as CpuError, CPU, TCPU};
 use crate::spec::mmu::{Error as MmuError, MMU};
 use crate::spec::register::TRegister;
 
-pub struct GameBoy {
+pub enum Peripheral {
+    SerialPort(Box<dyn Fn(Option<char>) -> ()>)
+}
+
+pub struct GameBoy
+{
     cartridge: Cartridge,
     clock: Clock,
     cpu: CPU,
     mmu: MMU,
+    peripherals: Vec<Peripheral>
 }
 
 #[derive(Debug)]
@@ -61,6 +67,7 @@ impl GameBoy {
             mmu,
             clock,
             cartridge,
+            peripherals: vec![]
         })
     }
 
@@ -79,16 +86,46 @@ impl GameBoy {
 
         loop {
             self.cycle()?;
+            self.handle_peripherals()?;
 
-            let sc = self.mmu.read_byte(0xFF02)?;
-            let c = self.mmu.read_byte(0xFF01)? as char;
+            // let mut p = &self.peripherals[0];
+            // p(self)
 
-            if sc == 0x81 {
-                self.mmu.write_byte(0xFF02, 0)?;
-                print!("{}", c);
+            // let sc = self.mmu.read_byte(0xFF02)?;
+            // let c = self.mmu.read_byte(0xFF01)? as char;
+            //
+            // if sc == 0x81 {
+            //     self.mmu.write_byte(0xFF02, 0)?;
+            //     print!("{}", c);
+            // }
+        }
+
+        Ok(())
+    }
+
+    fn handle_peripherals(&mut self) -> Result<(), GameBoyError> {
+        for p in self.peripherals.iter() {
+            match p {
+                Peripheral::SerialPort(f) => {
+                    let sc = self.mmu.read_byte(0xFF02)?;
+
+                    let arg = if sc == 0x81 {
+                        self.mmu.write_byte(0xFF02, 0)?;
+                        Some(self.mmu.read_byte(0xFF01)? as char)
+                    } else {
+                        None
+                    };
+
+                    f(arg)
+                }
             }
         }
 
         Ok(())
+    }
+
+    pub fn attach_peripheral(&mut self, p: Peripheral)
+    {
+        self.peripherals.push(p);
     }
 }

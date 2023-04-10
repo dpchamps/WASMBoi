@@ -4,10 +4,10 @@ use std::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, Deref};
 use std::{fmt, u16};
 
 use crate::spec::cpu::Error::Default;
+use crate::util::byte_ops::hi_lo_combine;
 use num::traits::{WrappingAdd, WrappingSub};
 use num::{cast, PrimInt as Integer};
 use std::ops;
-use crate::util::byte_ops::hi_lo_combine;
 
 #[derive(Debug, Clone)]
 pub struct Flags {
@@ -40,7 +40,6 @@ impl From<Flags> for FlagRegister {
     }
 }
 
-
 #[derive(Default, PartialEq, Eq, Debug)]
 pub struct FlagRegister(pub u8);
 
@@ -54,13 +53,14 @@ impl FlagRegister {
     }
 
     pub fn update<F>(&mut self, mut f: F)
-    where F: FnMut(Flags) -> Flags
+    where
+        F: FnMut(Flags) -> Flags,
     {
         let flags = Flags::from(self.0);
         self.0 = FlagRegister::from(f(flags)).get_value();
     }
 
-    pub fn set_bits(&mut self, bits: FlagRegister){
+    pub fn set_bits(&mut self, bits: FlagRegister) {
         self.0 &= bits.0
     }
 }
@@ -68,9 +68,10 @@ impl FlagRegister {
 pub trait CarryFlags {
     fn half_carry_add(&self, other: &Self) -> bool;
     fn half_carry_sub(&self, other: &Self) -> bool;
-    fn half_carry<F>(&self, value: &Self, f:F) -> bool
+    fn half_carry<F>(&self, value: &Self, f: F) -> bool
     where
-        F: FnMut((Self, Self)) -> Self, Self:Sized;
+        F: FnMut((Self, Self)) -> Self,
+        Self: Sized;
     fn full_carry_add(&self, other: &Self) -> bool;
     fn full_carry_sub(&self, other: &Self) -> bool;
 }
@@ -86,7 +87,8 @@ impl CarryFlags for u8 {
 
     fn half_carry<F>(&self, value: &Self, mut f: F) -> bool
     where
-        F: FnMut((Self, Self)) -> Self, Self: Sized
+        F: FnMut((Self, Self)) -> Self,
+        Self: Sized,
     {
         f((*self & 0xf, *value & 0xF)) == 0x10
     }
@@ -110,8 +112,8 @@ impl CarryFlags for u16 {
     }
 
     fn half_carry<F>(&self, value: &Self, mut f: F) -> bool
-        where
-            F: FnMut((Self, Self)) -> Self
+    where
+        F: FnMut((Self, Self)) -> Self,
     {
         f((*self & 0xFFF, *value & 0xFFF)) == 0x1000
     }
@@ -131,12 +133,12 @@ impl CarryFlags for i16 {
     }
 
     fn half_carry_sub(&self, other: &Self) -> bool {
-        (((*self& 0xFFF) - (*other& 0xFFF)) & 0x1000) == 0x1000
+        (((*self & 0xFFF) - (*other & 0xFFF)) & 0x1000) == 0x1000
     }
 
     fn half_carry<F>(&self, value: &Self, mut f: F) -> bool
-        where
-            F: FnMut((Self, Self)) -> Self
+    where
+        F: FnMut((Self, Self)) -> Self,
     {
         f((*self & 0xFFF, *value & 0xFFF)) == 0x1000
     }
@@ -229,7 +231,7 @@ where
         let h = false;
         let c = false;
 
-        RegisterOpResult::new(result, FlagRegister::new(z,n,h, c))
+        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
     }
 
     pub fn and(&self, value: T) -> RegisterOpResult<T> {
@@ -240,7 +242,7 @@ where
         let h = true;
         let c = false;
 
-        RegisterOpResult::new(result, FlagRegister::new(z,n,h, c))
+        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
     }
 
     pub fn xor(&self, value: T) -> RegisterOpResult<T> {
@@ -251,7 +253,7 @@ where
         let h = false;
         let c = false;
 
-        RegisterOpResult::new(result, FlagRegister::new(z,n,h, c))
+        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
     }
 }
 

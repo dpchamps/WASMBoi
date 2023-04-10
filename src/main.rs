@@ -10,6 +10,7 @@ extern crate impl_ops;
 use crate::spec::cpu::CPU;
 use std::env;
 use std::fs;
+use crate::spec::gameboy::Peripheral;
 
 fn main() {
     let rom_location = env::var("ROM").unwrap();
@@ -22,6 +23,14 @@ fn main() {
             e
         )
     });
+
+    gameboy.attach_peripheral(Peripheral::SerialPort(Box::new(|c| {
+        if env::var("SERIAL_PORT_STDOUT").unwrap_or("false".into()) == "true" {
+            if let Some(x) = c {
+            print!("{}", x)
+            }
+        }
+    })));
 
     gameboy.start().expect("Gameboy failed")
 }

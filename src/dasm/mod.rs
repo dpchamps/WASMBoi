@@ -60,7 +60,9 @@ impl TryFrom<(u8, Option<u8>)> for InstructionData {
         };
         let mnemonic = Mnemonic::from(&instruction);
         let size = Instruction::get_size(&instruction);
-        let byte_data = maybe_cb_byte.map(ByteData::from).unwrap_or(ByteData::from(byte));
+        let byte_data = maybe_cb_byte
+            .map(ByteData::from)
+            .unwrap_or(ByteData::from(byte));
 
         Ok(InstructionData {
             byte: maybe_cb_byte.unwrap_or(byte),

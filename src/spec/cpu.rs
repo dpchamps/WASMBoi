@@ -6,6 +6,7 @@ use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::*;
 use crate::spec::register::{RegisterError, Registers, TRegister};
 use std::convert::TryFrom;
+use std::env;
 use std::num::Wrapping;
 
 pub trait TCPU {
@@ -20,8 +21,69 @@ pub trait TStackable {
     fn pop_stack_word(&mut self, mmu: &mut MMU) -> Result<u16, Error>;
 }
 
+pub struct CpuDebug {
+    current_instruction: bool,
+    current_register_values: bool,
+    alu: bool,
+    bitwise: bool,
+    control: bool,
+    ld: bool,
+    stack: bool
+}
+
+impl Default for CpuDebug {
+    fn default() -> Self {
+        let cpu_env = env::var("CPU_DEBUG").unwrap_or("".into());
+        let debug_list: Vec<&str> = cpu_env.split(",").collect();
+
+        CpuDebug {
+            current_instruction: debug_list.contains(&"PC"),
+            current_register_values: debug_list.contains(&"REG"),
+            alu: debug_list.contains(&"ALU"),
+            bitwise: debug_list.contains(&"BIT"),
+            control: debug_list.contains(&"CONTROL"),
+            ld: debug_list.contains(&"LD"),
+            stack: debug_list.contains(&"STACK"),
+        }
+    }
+}
+
+
+
+impl CpuDebug {
+    #[cfg(debug_assertions)]
+    pub fn log<F>(&self, t: &str, f: F)
+    where
+        F: Fn() -> ()
+    {
+        let should_log = match t {
+            "PC" => self.current_instruction,
+            "REG" => self.current_register_values,
+            "ALU" => self.alu,
+            "BIT" => self.bitwise,
+            "CONTROL" => self.control,
+            "LD" => self.ld,
+            "STACK" => self.stack,
+            _ => false
+        };
+
+        if should_log {
+            f()
+        }
+    }
+
+    #[cfg(not(debug_assertions))]
+    pub fn log<F>(&self, t: &str, f: F)
+        where
+            F: Fn() -> ()
+    {
+
+    }
+}
+
 pub struct CPU {
     pub(crate) registers: Registers,
+    pub(crate) debug: CpuDebug,
 }
 
 #[derive(Debug)]
@@ -60,23 +122,19 @@ impl TCPU for CPU {
             mmu.read_byte((Wrapping(*self.registers.pc.get_value()) + Wrapping(1)).0)
                 .map_err(Error::MmuError)?,
         ];
-        // println!(
-        //     "[PC: {:#X}] Op: {}, Dat: [{:X?}]",
-        //     last_pc,
-        //     opcode,
-        //     data
-        // );
-        self.registers.pc.set_value(*self.registers.pc.get_value()+opcode.size as u16);
+        self.debug.log("PC", || {
+            println!("[PC: {:#X}] Op: {}, Dat: [{:X?}]",
+                     last_pc,
+                     opcode,
+                     data)
+        });
+        self.registers
+            .pc
+            .set_value(*self.registers.pc.get_value() + opcode.size as u16);
         let cycles = self.execute(&opcode, &data, mmu)?;
-        // println!("\t{}", self.registers);
-        // if *self.registers.pc.get_value() == 0xCBB0 {
-        //     panic!()
-        // }
-        //
-        // if opcode.byte == 0x18 && data[0] == 0xfe {
-        //     panic!()
-        // }
-
+        self.debug.log("REG", || {
+            println!("\t{}", self.registers)
+        });
 
         Ok(cycles)
     }
@@ -132,8 +190,8 @@ impl CPU {
         let pc = self.increment_pc()?;
         let op = mmu.read_byte(pc).map_err(Error::MmuError)?;
         let cb_byte = match op {
-            0xCB => Some(mmu.read_byte(pc+1).map_err(Error::MmuError)?),
-            _ => None
+            0xCB => Some(mmu.read_byte(pc + 1).map_err(Error::MmuError)?),
+            _ => None,
         };
 
         InstructionData::try_from((op, cb_byte)).map_err(Error::DecodeError)
@@ -201,6 +259,7 @@ impl CPU {
     pub fn new() -> Result<CPU, Error> {
         Ok(CPU {
             registers: Registers::new(),
+            debug: CpuDebug::default()
         })
     }
 }

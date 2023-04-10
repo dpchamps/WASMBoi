@@ -1,5 +1,3 @@
-use std::num::Wrapping;
-use std::ops::Add;
 use crate::dasm::InstructionData;
 use crate::spec::clock::Clock;
 use crate::spec::cpu::*;
@@ -10,6 +8,8 @@ use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::{RegisterRefMut, TRegister};
 use crate::spec::register_ops::{FlagRegister, RegisterOp};
 use crate::util::byte_ops::{extract_hi_lo, hi_lo_combine};
+use std::num::Wrapping;
+use std::ops::Add;
 
 impl CPU {
     pub(crate) fn evaluate_ld(
@@ -20,8 +20,13 @@ impl CPU {
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::LD_RR => {
-                let r_prime_value = self.registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
-                let mut r = self.registers.reg_from_byte(instruction_data.byte_data.lhs)?;
+                let r_prime_value = self
+                    .registers
+                    .reg_from_byte(instruction_data.byte_data.rhs)?
+                    .get_eight_bit_val()?;
+                let mut r = self
+                    .registers
+                    .reg_from_byte(instruction_data.byte_data.lhs)?;
                 // println!("\t\t {:?} <- {:X}", r, r_prime_value);
 
                 r.set_eight_bit_val(r_prime_value)?;
@@ -46,14 +51,19 @@ impl CPU {
             }
             Instruction::LD_RHL => {
                 let value = mmu.read_byte(self.registers.hl())?;
-                let mut reg = self.registers.reg_from_byte(instruction_data.byte_data.lhs)?;
+                let mut reg = self
+                    .registers
+                    .reg_from_byte(instruction_data.byte_data.lhs)?;
 
                 reg.set_eight_bit_val(value)?;
 
                 Ok(2)
             }
             Instruction::LD_HLR => {
-                let reg_r_value = self.registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
+                let reg_r_value = self
+                    .registers
+                    .reg_from_byte(instruction_data.byte_data.rhs)?
+                    .get_eight_bit_val()?;
                 mmu.write_byte(self.registers.hl(), reg_r_value)?;
 
                 Ok(2)
@@ -71,7 +81,7 @@ impl CPU {
                 Ok(2)
             }
             Instruction::LD_AN => {
-                let value = mmu.read_byte(0xFF00+(opcode_data[0] as u16))?;
+                let value = mmu.read_byte(0xFF00 + (opcode_data[0] as u16))?;
 
                 self.registers.a.set_value(value);
                 Ok(3)
@@ -149,19 +159,22 @@ impl CPU {
                 self.registers.sp.set_value(self.registers.hl());
 
                 Ok(2)
-            },
+            }
             Instruction::LD_SPDD => {
                 let address = hi_lo_combine(opcode_data[1], opcode_data[0]);
                 mmu.write_word(address, *self.registers.sp.get_value())?;
 
                 Ok(5)
-            },
+            }
             Instruction::LDHL => {
                 self.registers.op_with_effect(|registers| {
-                    let mut result = RegisterOp::new(*registers.sp.get_value() as i16).add((opcode_data[0] as i8) as i16);
+                    let mut result = RegisterOp::new(*registers.sp.get_value() as i16)
+                        .add((opcode_data[0] as i8) as i16);
 
                     registers.sp.set_value(result.value as u16);
-                    result.flags.set_bits(FlagRegister::new(false, false, true, true));
+                    result
+                        .flags
+                        .set_bits(FlagRegister::new(false, false, true, true));
 
                     Ok(result)
                 })?;

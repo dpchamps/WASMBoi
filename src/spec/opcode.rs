@@ -218,9 +218,7 @@ impl Instruction {
             | Instruction::RLA
             | Instruction::RRCA
             | Instruction::UNIMPLEMENTED
-            | Instruction::RRA
-
-            => 0,
+            | Instruction::RRA => 0,
 
             Instruction::ADD_AN
             | Instruction::ADD_SPN
@@ -536,7 +534,7 @@ pub fn cb_prefix_instruction_lookup(byte: u8) -> OpcodeLookupResult {
 
 pub fn instruction_lookup(byte: u8, cb_byte: Option<u8>) -> OpcodeLookupResult {
     if let Some(cb_byte) = cb_byte {
-        return cb_prefix_instruction_lookup(cb_byte)
+        return cb_prefix_instruction_lookup(cb_byte);
     }
 
     match byte {
@@ -788,4 +786,3 @@ pub fn instruction_lookup(byte: u8, cb_byte: Option<u8>) -> OpcodeLookupResult {
         _ => Err(OpcodeError::InvalidOpcodeInput),
     }
 }
-

@@ -43,9 +43,7 @@ impl CPU {
                 let carry_flag = (self.registers.flag_register().z << 7) | 0x7F;
                 let value = self
                     .registers
-                    .op(|registers| {
-                        RegisterOp::new(*registers.a.get_value()).rotate_right(1)
-                    });
+                    .op(|registers| RegisterOp::new(*registers.a.get_value()).rotate_right(1));
 
                 self.registers.a.set_value(carry_flag & value);
 
@@ -143,7 +141,9 @@ impl CPU {
             }
             Instruction::SET_NR => {
                 let bit = 1 << instruction_data.byte_data.lhs;
-                let mut reg = self.registers.reg_from_byte(instruction_data.byte_data.rhs)?;
+                let mut reg = self
+                    .registers
+                    .reg_from_byte(instruction_data.byte_data.rhs)?;
 
                 reg.set_eight_bit_val(reg.get_eight_bit_val()? | bit)?;
 

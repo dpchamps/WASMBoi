@@ -1,6 +1,6 @@
 use crate::dasm::InstructionData;
 use crate::spec::clock::Clock;
-use crate::spec::cpu::{Error, CPU, TStackable};
+use crate::spec::cpu::{Error, TStackable, CPU};
 use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;

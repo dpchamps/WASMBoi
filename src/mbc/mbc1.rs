@@ -1,5 +1,5 @@
-use std::num::Wrapping;
 use crate::mbc::{Mbc, MbcError};
+use std::num::Wrapping;
 
 #[derive(Default)]
 pub struct Mbc1 {
@@ -37,7 +37,7 @@ impl Mbc for Mbc1 {
                 // println!("\t\tReading from ({:X}){:X}", address, (self.rom_bank_offset));
 
                 Ok(self.rom[(self.rom_bank_offset + (address)) as usize])
-            },
+            }
             0xA000..=0xBFFF => {
                 let address = if self.bank_mode {
                     address + (self.ram_bank_offset)
