@@ -72,6 +72,10 @@ impl TCPU for CPU {
         // if *self.registers.pc.get_value() == 0xCBB0 {
         //     panic!()
         // }
+        //
+        // if opcode.byte == 0x18 && data[0] == 0xfe {
+        //     panic!()
+        // }
 
 
         Ok(cycles)

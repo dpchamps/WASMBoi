@@ -1,4 +1,5 @@
 use std::num::Wrapping;
+use std::ops::Add;
 use crate::dasm::InstructionData;
 use crate::spec::clock::Clock;
 use crate::spec::cpu::*;
@@ -7,6 +8,7 @@ use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::{RegisterRefMut, TRegister};
+use crate::spec::register_ops::{FlagRegister, RegisterOp};
 use crate::util::byte_ops::{extract_hi_lo, hi_lo_combine};
 
 impl CPU {
@@ -153,6 +155,18 @@ impl CPU {
                 mmu.write_word(address, *self.registers.sp.get_value())?;
 
                 Ok(5)
+            },
+            Instruction::LDHL => {
+                self.registers.op_with_effect(|registers| {
+                    let mut result = RegisterOp::new(*registers.sp.get_value() as i16).add((opcode_data[0] as i8) as i16);
+
+                    registers.sp.set_value(result.value as u16);
+                    result.flags.set_bits(FlagRegister::new(false, false, true, true));
+
+                    Ok(result)
+                })?;
+
+                Ok(3)
             }
             _ => Err(unexpected_op(&instruction_data.mnemonic, &Mnemonic::LD)),
         }

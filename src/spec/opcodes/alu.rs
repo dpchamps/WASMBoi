@@ -8,7 +8,7 @@ use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::{RegisterError, RegisterRefMut, RegisterType, TRegister};
-use crate::spec::register_ops::{Flags, RegisterOp, RegisterOpResult};
+use crate::spec::register_ops::{FlagRegister, Flags, RegisterOp, RegisterOpResult};
 use crate::util::byte_ops::hi_lo_combine;
 use std::num::Wrapping;
 use std::ops::Add;
@@ -166,7 +166,10 @@ impl CPU {
                 Ok(2)
             }
             Instruction::CP_R => {
-                unimplemented!()
+                let value = self.registers.reg_from_byte(instruction_data.byte_data.rhs)?.get_eight_bit_val()?;
+                self.registers.op(|registers| RegisterOp::new(*registers.a.get_value()).sub(value));
+
+                Ok(1)
             }
             Instruction::CP_N => {
                 self.registers
@@ -175,7 +178,11 @@ impl CPU {
                 Ok(2)
             }
             Instruction::CP_HL => {
-                unimplemented!()
+                let value = mmu.read_byte(self.registers.hl())?;
+
+                self.registers.op(|registers| RegisterOp::new(*registers.a.get_value()).sub(value));
+
+                Ok(2)
             }
             Instruction::INC_R => {
                 self.registers.op_with_effect(|registers| {
@@ -225,10 +232,50 @@ impl CPU {
                 Ok(3)
             }
             Instruction::DAA => {
-                unimplemented!()
+                let mut flags = self.registers.flag_register();
+                let mut a_value = *self.registers.a.get_value();
+                // print!("{:?} {} ", flags, self.registers.a);
+
+                match flags.n {
+                    0 => {
+                        if flags.c != 0 || a_value > 0x99 {
+                            a_value = (Wrapping(a_value) + Wrapping(0x60)).0;
+                            flags.c = 1;
+                        }
+                        if flags.h != 0 || (a_value & 0x0f) > 0x09 {
+                            a_value = (Wrapping(a_value) + Wrapping(0x6)).0;
+                        }
+                    },
+                    _ => {
+                        if flags.c != 0 {
+                            a_value = (Wrapping(a_value) - Wrapping(0x60)).0;
+                        }
+
+                        if flags.h != 0 {
+                            a_value = (Wrapping(a_value) - Wrapping(0x6)).0;
+                        }
+                    }
+                }
+
+                flags.z = (a_value == 0) as u8;
+                flags.h = 0;
+
+                self.registers.f.set_value(FlagRegister::from(flags).0);
+                self.registers.a.set_value(a_value);
+
+                // println!("\t -> {:?} {}", self.registers.flag_register(), self.registers.a);
+
+
+                Ok(1)
             }
             Instruction::CPL => {
-                unimplemented!()
+                let mut flags = self.registers.flag_register();
+                let a_value = *self.registers.a.get_value();
+
+                self.registers.a.set_value(!a_value);
+                self.registers.f.set_value(FlagRegister::new(flags.z != 0, true, true, false).0);
+
+                Ok(1)
             }
             Instruction::ADD_HLRR => {
                 let dd = instruction_data.byte_data.lhs >> 1;
@@ -247,7 +294,15 @@ impl CPU {
                 Ok(2)
             }
             Instruction::ADD_SPN => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let mut result = RegisterOp::new(*registers.sp.get_value()).add(opcode_data[0] as u16);
+                    registers.sp.set_value(result.value);
+
+                    result.flags.set_bits(FlagRegister::new(false, false, true, true));
+
+                    Ok(result)
+                })?;
+                Ok(2)
             }
             Instruction::INC_RR => {
                 let dd = instruction_data.byte_data.lhs >> 1;
@@ -258,7 +313,19 @@ impl CPU {
                 Ok(2)
             }
             Instruction::DEC_RR => {
-                unimplemented!()
+                let dd = instruction_data.byte_data.lhs >> 1;
+                self.registers.op_with_effect(|registers| {
+                    let mut reg_pair = registers.reg_pair_from_dd(dd)?;
+                    let mut result = RegisterOp::new(reg_pair.get_value()).sub(1);
+
+                    result.flags.set_bits(FlagRegister::new(true, false, false, false));
+                    reg_pair.set_value_16(result.value);
+
+                    Ok(result)
+                })?;
+
+
+                Ok(2)
             }
             Instruction::LD_SPDD => {
                 unimplemented!()

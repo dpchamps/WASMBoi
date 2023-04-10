@@ -24,8 +24,12 @@ impl CPU {
             }
             Instruction::POP_RR => {
                 let qq = instruction_data.byte_data.lhs >> 1;
-                let value = self.pop_stack_word(mmu)?;
+                let mut value = self.pop_stack_word(mmu)?;
                 let mut reg_pair = self.registers.reg_pair_from_qq(qq)?;
+
+                if qq == 0b11 {
+                    value = value & 0xFFF0;
+                }
 
                 reg_pair.set_value_16(value);
 

@@ -9,7 +9,7 @@ use num::{cast, PrimInt as Integer};
 use std::ops;
 use crate::util::byte_ops::hi_lo_combine;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Flags {
     pub z: u8,
     pub n: u8,
@@ -26,10 +26,10 @@ impl From<&FlagRegister> for Flags {
 impl From<u8> for Flags {
     fn from(byte: u8) -> Self {
         Flags {
-            z: (byte & 0b1000) >> 3,
-            n: (byte & 0b0100) >> 2,
-            h: (byte & 0b0010) >> 1,
-            c: (byte & 0b0001),
+            z: (byte & 0b10000000) >> 7,
+            n: (byte & 0b01000000) >> 6,
+            h: (byte & 0b00100000) >> 5,
+            c: (byte & 0b00010000) >> 4,
         }
     }
 }
@@ -50,7 +50,7 @@ impl FlagRegister {
     }
 
     pub fn new(z: bool, n: bool, h: bool, c: bool) -> Self {
-        FlagRegister(((z as u8) << 3) | ((n as u8) << 2) | ((h as u8) << 1) | (c as u8))
+        FlagRegister(((z as u8) << 7) | ((n as u8) << 6) | ((h as u8) << 5) | (c as u8) << 4)
     }
 
     pub fn update<F>(&mut self, mut f: F)
@@ -58,6 +58,10 @@ impl FlagRegister {
     {
         let flags = Flags::from(self.0);
         self.0 = FlagRegister::from(f(flags)).get_value();
+    }
+
+    pub fn set_bits(&mut self, bits: FlagRegister){
+        self.0 &= bits.0
     }
 }
 
@@ -102,7 +106,32 @@ impl CarryFlags for u16 {
     }
 
     fn half_carry_sub(&self, other: &Self) -> bool {
-        (((self & 0xFFF) - (other & 0xFFF)) & 0x1000) == 0x1000
+        (((*self as i16 & 0xFFF) - (*other as i16 & 0xFFF)) & 0x1000) == 0x1000
+    }
+
+    fn half_carry<F>(&self, value: &Self, mut f: F) -> bool
+        where
+            F: FnMut((Self, Self)) -> Self
+    {
+        f((*self & 0xFFF, *value & 0xFFF)) == 0x1000
+    }
+
+    fn full_carry_add(&self, other: &Self) -> bool {
+        self.checked_add(*other).map(|_| false).unwrap_or(true)
+    }
+
+    fn full_carry_sub(&self, other: &Self) -> bool {
+        self.checked_sub(*other).map(|_| false).unwrap_or(true)
+    }
+}
+
+impl CarryFlags for i16 {
+    fn half_carry_add(&self, other: &Self) -> bool {
+        (((self & 0xFFF) + (other & 0xFFF)) & 0x1000) == 0x1000
+    }
+
+    fn half_carry_sub(&self, other: &Self) -> bool {
+        (((*self& 0xFFF) - (*other& 0xFFF)) & 0x1000) == 0x1000
     }
 
     fn half_carry<F>(&self, value: &Self, mut f: F) -> bool

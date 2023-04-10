@@ -216,7 +216,7 @@ impl Registers {
             e: Register::new(0xD8, RegisterType::E),
             h: Register::new(0x01, RegisterType::H),
             l: Register::new(0x4D, RegisterType::L),
-            f: Register::new(0b1011, RegisterType::F),
+            f: Register::new(0b10110000, RegisterType::F),
             pc: Register::new(0x100, RegisterType::PC),
             sp: Register::new(0xFFFE, RegisterType::SP),
         }
@@ -387,7 +387,7 @@ impl Display for Registers {
 impl<T: Default + UpperHex + Binary> Display for Register<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self.tag {
-            RegisterType::F => write!(f, "[{}]: {:04b}", self.tag, self.value),
+            RegisterType::F => write!(f, "[{}]: {:08b}", self.tag, self.value),
             _ => write!(f, "[{}]: {:X}", self.tag, self.value),
         }
     }
