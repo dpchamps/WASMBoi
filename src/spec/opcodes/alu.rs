@@ -313,10 +313,16 @@ impl CPU {
             Instruction::ADD_SPN => {
                 self.registers.op_with_effect(|registers| {
                     let mut result =
-                        RegisterOp::new(*registers.sp.get_value()).add(opcode_data[0] as u16);
-                    registers.sp.set_value(result.value);
+                        RegisterOp::new(*registers.sp.get_value() as i16).add((opcode_data[0] as i8) as i16);
 
-                    result.set_mask(FlagRegister::new(false, false, true, true));
+                    result.flags.update(|flags| {
+                        let mut next = flags;
+                        next.z = 0;
+
+                        next
+                    });
+
+                    registers.sp.set_value(result.value as u16);
 
                     Ok(result)
                 })?;
@@ -336,7 +342,7 @@ impl CPU {
                     let mut reg_pair = registers.reg_pair_from_dd(dd)?;
                     let mut result = RegisterOp::new(reg_pair.get_value()).sub(1);
 
-                    result.set_mask(FlagRegister::new(true, false, false, false));
+                    result.set_mask(FlagRegister::new(false, false, false, false));
 
                     reg_pair.set_value_16(result.value);
 
