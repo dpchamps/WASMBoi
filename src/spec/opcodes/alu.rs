@@ -53,7 +53,7 @@ impl CPU {
             Instruction::ADC_AN => {
                 self.registers.op_with_effect(|registers| {
                     let mut result = RegisterOp::new(*registers.a.get_value())
-                        .add(opcode_data[0] + registers.flag_register().z);
+                        .add(opcode_data[0] + registers.flag_register().c);
                     registers.a.set_value(result.value);
 
                     result.flags.update(|flags| {
@@ -202,14 +202,15 @@ impl CPU {
 
                     match byte_reg {
                         RegisterRefMut::Byte(reg) => {
-                            let reg_op = RegisterOp::new(*reg.get_value()).add(1);
+                            let mut reg_op = RegisterOp::new(*reg.get_value()).add(1);
+                            reg_op.set_mask(FlagRegister::new(true, true, true, false));
+
                             reg.set_value(reg_op.value);
                             Ok(reg_op)
                         }
                         _ => Err(RegisterError::InvalidLookupInput),
                     }
                 })?;
-
                 Ok(1)
             }
             Instruction::INC_HL => {
@@ -221,7 +222,9 @@ impl CPU {
 
                     match byte_reg {
                         RegisterRefMut::Byte(reg) => {
-                            let reg_op = RegisterOp::new(*reg.get_value()).sub(1);
+                            let mut reg_op = RegisterOp::new(*reg.get_value()).sub(1);
+                            reg_op.set_mask(FlagRegister::new(true, true, true, false));
+
                             reg.set_value(reg_op.value);
                             Ok(reg_op)
                         }
@@ -233,9 +236,10 @@ impl CPU {
             }
             Instruction::DEC_HL => {
                 self.registers.op_with_effect(|registers| {
-                    let result = RegisterOp::new(registers.hl()).sub(1);
+                    let value = mmu.read_byte(registers.hl())?;
+                    let result = RegisterOp::new(value).sub(1);
 
-                    registers.hl_mut().set_value_16(result.value);
+                    mmu.write_byte(registers.hl(), result.value)?;
 
                     Ok(result)
                 })?;
@@ -294,9 +298,10 @@ impl CPU {
                 let reg_value = self.registers.reg_pair_from_dd(dd)?.get_value();
                 self.registers.op_with_effect(|register| {
                     let mut hl = register.hl_mut();
-                    let result = RegisterOp::new(hl.get_value()).add(reg_value);
+                    let mut result = RegisterOp::new(hl.get_value()).add(reg_value);
 
-                    // println!("\t\t {:X?} <- {:X} ({:X} + {:X})", hl, result.value, hl.get_value(), reg_value);
+                    result.set_mask(FlagRegister::new(false, true, true, true));
+
 
                     hl.set_value_16(result.value);
 
@@ -311,9 +316,7 @@ impl CPU {
                         RegisterOp::new(*registers.sp.get_value()).add(opcode_data[0] as u16);
                     registers.sp.set_value(result.value);
 
-                    result
-                        .flags
-                        .set_bits(FlagRegister::new(false, false, true, true));
+                    result.set_mask(FlagRegister::new(false, false, true, true));
 
                     Ok(result)
                 })?;
@@ -333,9 +336,8 @@ impl CPU {
                     let mut reg_pair = registers.reg_pair_from_dd(dd)?;
                     let mut result = RegisterOp::new(reg_pair.get_value()).sub(1);
 
-                    result
-                        .flags
-                        .set_bits(FlagRegister::new(true, false, false, false));
+                    result.set_mask(FlagRegister::new(true, false, false, false));
+
                     reg_pair.set_value_16(result.value);
 
                     Ok(result)

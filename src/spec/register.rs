@@ -260,7 +260,8 @@ impl Registers {
         F: for<'b> FnMut(&'b Self) -> RegisterOpResult<T>,
     {
         let result = f(self);
-        self.f.set_value(result.flags.get_value());
+        let next_flag = result.get_masked_value(self.f.value);
+        self.f.set_value(next_flag);
 
         result.value
     }
@@ -271,7 +272,8 @@ impl Registers {
         F: for<'b> FnMut(&'b mut Self) -> Result<RegisterOpResult<T>, RegisterError>,
     {
         let result = f(self)?;
-        self.f.set_value(result.flags.get_value());
+        let next_flag = result.get_masked_value(self.f.value);
+        self.f.set_value(next_flag);
 
         Ok(result.value)
     }

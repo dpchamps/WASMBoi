@@ -7,6 +7,8 @@ mod spec;
 mod util;
 #[macro_use]
 extern crate impl_ops;
+extern crate core;
+
 use crate::spec::cpu::CPU;
 use std::env;
 use std::fs;
@@ -14,7 +16,7 @@ use crate::spec::gameboy::Peripheral;
 
 fn main() {
     let rom_location = env::var("ROM").unwrap();
-    println!("Loading ${}", rom_location);
+    // println!("Loading ${}", rom_location);
     let rom = fs::read(rom_location).unwrap();
 
     let mut gameboy = spec::gameboy::GameBoy::new(&rom).unwrap_or_else(|e| {

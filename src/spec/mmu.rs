@@ -1,8 +1,11 @@
 #![allow(non_camel_case_types)]
+
+use std::convert::TryFrom;
+use std::ops::Range;
 use crate::mbc::rom::Rom;
 use crate::mbc::{mbc1::Mbc1, Mbc, MbcError};
 use crate::spec::cartridge_header::{Cartridge, CartridgeType};
-use crate::spec::hardware_registers::{HardwareRegister, HardwareRegisterError};
+use crate::spec::hardware_registers::{HardwareRegister, HardwareRegisterError, Interrupt};
 use crate::spec::memory_region::MemoryRegion;
 use crate::spec::mmu::Error::CreateError;
 
@@ -14,6 +17,7 @@ pub enum Error {
     MBCError(MbcError),
     HWError(HardwareRegisterError),
     UnusableWriteRegion,
+    InvalidInterruptFlagState
 }
 
 impl From<MbcError> for Error {
@@ -69,7 +73,8 @@ impl From<&CartridgeType> for MbcType {
 
 pub struct MMU {
     mbc: Box<dyn Mbc>,
-    enable_interrupts: u8,
+    pub enable_interrupts: bool,
+    interrupt_enable: u8,
     pub internal_ram: Box<[u8]>,
     hi_ram: Box<[u8]>,
     // TODO: hw registers implemented as a solid block of mem. Pick these off into
@@ -81,7 +86,8 @@ impl MMU {
     pub fn new(game_data: &[u8], cart_type: &CartridgeType) -> Result<MMU, Error> {
         Ok(MMU {
             mbc: Self::create_mbc_from_type(cart_type, game_data),
-            enable_interrupts: 0,
+            enable_interrupts: false,
+            interrupt_enable: 0,
             internal_ram: Box::from([0; 0xE000 - 0xC000]),
             hi_ram: Box::from([0; 0xFFFF - 0xFF80]),
             hw_registers: HardwareRegister::default(),
@@ -108,7 +114,7 @@ impl MMU {
             0xFEA0..=0xFEFF => Ok(0),
             0xFF00..=0xFF7F => Ok(self.hw_registers.map_read(address)?),
             0xFF80..=0xFFFE => Ok(self.hi_ram[(address - 0xFF80) as usize]),
-            0xFFFF => Ok(self.enable_interrupts),
+            0xFFFF => Ok(self.interrupt_enable),
             _ => self
                 .mbc
                 .map_read(address)
@@ -130,7 +136,6 @@ impl MMU {
                 } else {
                     address
                 };
-                // println!("\t\t Writing internal ram ({:X}){:X}<-{:X}", address, mirrored_address - 0xC000, value);
 
                 self.internal_ram[(mirrored_address - 0xC000) as usize] = value;
                 Ok(())
@@ -142,7 +147,8 @@ impl MMU {
                 Ok(())
             }
             0xFFFF => {
-                self.enable_interrupts = value;
+                self.interrupt_enable = value;
+
                 Ok(())
             }
             _ => self.mbc.map_write(address, value).or_else(|_| {
@@ -170,8 +176,38 @@ impl MMU {
         self.write_byte(address + 1, lhs as u8)
     }
 
-    pub fn write_interrupt_enable_reg(&mut self, value: bool) -> Result<(), Error> {
-        self.write_byte(0xFFFF, value as u8)
+    pub fn write_interrupt_enable_reg(&mut self, value: bool) {
+        self.enable_interrupts = value;
+    }
+
+    pub fn interrupts_enabled(&self) -> Result<Option<Interrupt>, Error> {
+        let interrupt_enable = self.read_byte(0xFFFF)?;
+        let interrupt_flag = self.read_byte(0xFF0F)?;
+
+        if self.enable_interrupts && (interrupt_enable & interrupt_flag) != 0 {
+            return Ok(Interrupt::try_from(interrupt_enable & interrupt_flag).ok());
+        }
+
+        Ok(None)
+    }
+
+    pub fn interrupts_scheduled(&self) -> Result<bool, Error> {
+        let interrupt_enable = self.read_byte(0xFFFF)?;
+        let interrupt_flag = self.read_byte(0xFF0F)?;
+
+        Ok((interrupt_enable & interrupt_flag) != 0)
+    }
+
+    pub fn set_interrupt_bit(&mut self, int: Interrupt, state: bool) -> Result<(), Error> {
+        let interrupt_flag = self.read_byte(0xFF0F)?;
+        let bit = int.get_position();
+        let next_value = if state {
+            interrupt_flag | bit
+        } else {
+            interrupt_flag & !bit
+        };
+
+        self.write_byte(0xFF0F, next_value)
     }
 
     fn create_mbc_from_type(cart_type: &CartridgeType, data: &[u8]) -> Box<dyn Mbc> {
@@ -185,5 +221,17 @@ impl MMU {
             MbcType::Mbc5Rumble => unimplemented!("MBC5Rumble"),
             MbcType::Mmm => unimplemented!("MMM"),
         }
+    }
+
+    #[cfg(debug_assertions)]
+    pub fn debug_print_range(&self, range: Range<u16>){
+        let mut chunk = vec![];
+        let x = range.clone();
+
+        for address in range {
+            chunk.push(format!("{:X}: {:X}", address, self.read_byte(address).unwrap()))
+        }
+
+        println!("Chunk between {:X?}: {:?}", x, chunk);
     }
 }

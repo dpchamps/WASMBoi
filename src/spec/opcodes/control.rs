@@ -22,17 +22,18 @@ impl CPU {
             }
             Instruction::NOP => Ok(1),
             Instruction::HALT => {
-                unimplemented!()
+                self.halt = true;
+                Ok(1)
             }
             Instruction::STOP => {
                 unimplemented!()
             }
             Instruction::DI => {
-                mmu.write_interrupt_enable_reg(false)?;
+                mmu.write_interrupt_enable_reg(false);
                 Ok(1)
             }
             Instruction::EI => {
-                mmu.write_interrupt_enable_reg(true)?;
+                mmu.write_interrupt_enable_reg(true);
                 Ok(1)
             }
             _ => Err(unexpected_op(&instruction_data.mnemonic, &Mnemonic::PUSH)),

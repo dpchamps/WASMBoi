@@ -6,7 +6,7 @@ use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::{RegisterRefMut, TRegister};
-use crate::spec::register_ops::{FlagRegister, RegisterOp};
+use crate::spec::register_ops::{CarryFlags, FlagRegister, Flags, RegisterOp};
 use crate::util::byte_ops::{extract_hi_lo, hi_lo_combine};
 use std::num::Wrapping;
 use std::ops::Add;
@@ -103,7 +103,6 @@ impl CPU {
             Instruction::LD_NA => {
                 let address = 0xFF00 + (opcode_data[0] as u16);
                 mmu.write_byte(address, *self.registers.a.get_value())?;
-
                 Ok(3)
             }
             Instruction::LD_NNA => {
@@ -128,6 +127,7 @@ impl CPU {
             Instruction::LD_AHLI => {
                 let hl = self.registers.hl();
                 let value = mmu.read_byte(hl)?;
+
                 let next_hl = Wrapping(hl) + Wrapping(1);
 
                 self.registers.a.set_value(value);
@@ -171,10 +171,14 @@ impl CPU {
                     let mut result = RegisterOp::new(*registers.sp.get_value() as i16)
                         .add((opcode_data[0] as i8) as i16);
 
-                    registers.sp.set_value(result.value as u16);
-                    result
-                        .flags
-                        .set_bits(FlagRegister::new(false, false, true, true));
+                    result.flags.update(|flags| {
+                        let mut next = flags;
+                        next.z = 0;
+
+                        next
+                    });
+
+                    registers.hl_mut().set_value_16(result.value as u16);
 
                     Ok(result)
                 })?;

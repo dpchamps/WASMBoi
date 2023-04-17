@@ -40,12 +40,14 @@ impl CPU {
                 // 0b10000001, cy = 0, carry_flag = 0
                 //  0b11000000, cy = 1 (0b01111111 | carry_flag) & value
                 // 0b01000000, cy = 1
-                let carry_flag = (self.registers.flag_register().z << 7) | 0x7F;
+                let carry_flag = (self.registers.flag_register().c << 7) | 0x7F;
                 let value = self
                     .registers
                     .op(|registers| RegisterOp::new(*registers.a.get_value()).rotate_right(1));
 
-                self.registers.a.set_value(carry_flag & value);
+                self.registers.f.set_value(FlagRegister::new(false, false, false, true).0 & *self.registers.f.get_value());
+
+                self.registers.a.set_value(carry_flag & (value | 0x80));
 
                 Ok(1)
             }
@@ -68,11 +70,18 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::RR_R => {
+                let carry_flag = (self.registers.flag_register().c << 7) | 0x7F;
+
                 self.registers.op_with_effect(|registers| {
                     let mut reg = registers.reg_from_byte(instruction_data.byte_data.rhs)?;
-                    let result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_right(1);
+                    let mut result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_right(1);
+                    reg.set_eight_bit_val(carry_flag & (result.value | 0x80))?;
 
-                    reg.set_eight_bit_val(result.value)?;
+                    result.flags.update(|mut f| {
+                        f.z = (reg.get_eight_bit_val().unwrap() == 0) as u8;
+
+                        f
+                    });
 
                     Ok(result)
                 })?;

@@ -28,7 +28,9 @@ pub struct CpuDebug {
     bitwise: bool,
     control: bool,
     ld: bool,
-    stack: bool
+    stack: bool,
+    interrupts: bool,
+    gb_doc: bool
 }
 
 impl Default for CpuDebug {
@@ -44,6 +46,8 @@ impl Default for CpuDebug {
             control: debug_list.contains(&"CONTROL"),
             ld: debug_list.contains(&"LD"),
             stack: debug_list.contains(&"STACK"),
+            interrupts: debug_list.contains(&"INTS"),
+            gb_doc: debug_list.contains(&"GB_DOC")
         }
     }
 }
@@ -64,6 +68,8 @@ impl CpuDebug {
             "CONTROL" => self.control,
             "LD" => self.ld,
             "STACK" => self.stack,
+            "INTS" => self.interrupts,
+            "GB_DOC" => self.gb_doc,
             _ => false
         };
 
@@ -84,6 +90,7 @@ impl CpuDebug {
 pub struct CPU {
     pub(crate) registers: Registers,
     pub(crate) debug: CpuDebug,
+    pub(crate) halt: bool
 }
 
 #[derive(Debug)]
@@ -114,6 +121,9 @@ impl TCPU for CPU {
     type E = Error;
 
     fn tick(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
+
+        self.gameboy_doc_debug(mmu);
+
         let last_pc = *self.registers.pc.get_value();
         let opcode = self.fetch(mmu)?;
         let data = [
@@ -135,7 +145,6 @@ impl TCPU for CPU {
         self.debug.log("REG", || {
             println!("\t{}", self.registers)
         });
-
         Ok(cycles)
     }
 }
@@ -152,13 +161,10 @@ impl TStackable for CPU {
     }
 
     fn push_stack_word(&mut self, value: u16, mmu: &mut MMU) -> Result<(), Error> {
-        self.registers
-            .sp
-            .update_value_checked(|sp| {
-                mmu.write_word(*sp - 1, value)?;
-                Ok(sp.checked_sub(2))
-            })
-            .map_err(Error::RegisterError)
+        self.registers.sp.update_value_checked(|sp| Ok(sp.checked_sub(2)))?;
+        mmu.write_word(*self.registers.sp.get_value(), value)?;
+
+        Ok(())
     }
 
     fn pop_stack_byte(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
@@ -166,7 +172,7 @@ impl TStackable for CPU {
     }
 
     fn pop_stack_word(&mut self, mmu: &mut MMU) -> Result<u16, Error> {
-        let stack_val = mmu.read_word(*self.registers.sp.get_value() + 1)?;
+        let stack_val = mmu.read_word(*self.registers.sp.get_value())?;
         self.registers
             .sp
             .update_value_checked(|sp| Ok(sp.checked_add(2)))?;
@@ -256,10 +262,65 @@ impl CPU {
         Ok(result)
     }
 
+    pub fn handle_interrupts(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
+        if let Some(interrupt) = mmu.interrupts_enabled()? {
+            self.debug.log("INTS", || {
+                println!("Handling Interrupt: {:?}", interrupt)
+            });
+
+            let isr = interrupt.get_isr_location();
+
+            self.debug.log("INTS", || println!("Jumping to {:X}", isr));
+
+            self.push_stack_word(*self.registers.pc.get_value(), mmu)?;
+            self.registers.pc.set_value(isr);
+            mmu.write_interrupt_enable_reg(false);
+            mmu.set_interrupt_bit(interrupt, false)?;
+
+            return Ok(5)
+        }
+
+        Ok(0)
+    }
+
+    pub fn gameboy_doc_debug(&self, mmu: &MMU) {
+        self.debug.log("GB_DOC", || {
+            let pc_mem = [
+                mmu.read_byte(*self.registers.pc.get_value())
+                    .map_err(Error::MmuError).unwrap(),
+                mmu.read_byte((Wrapping(*self.registers.pc.get_value()) + Wrapping(1)).0)
+                    .map_err(Error::MmuError).unwrap(),
+                mmu.read_byte((Wrapping(*self.registers.pc.get_value()) + Wrapping(2)).0)
+                    .map_err(Error::MmuError).unwrap(),
+                mmu.read_byte((Wrapping(*self.registers.pc.get_value()) + Wrapping(3)).0)
+                    .map_err(Error::MmuError).unwrap(),
+
+            ];
+            println!(
+                "A:{:02X} F:{:02X} B:{:02X} C:{:02X} D:{:02X} E:{:02X} H:{:02X} L:{:02X} SP:{:04X} PC:{:04X} PCMEM:{:02X},{:02X},{:02X},{:02X}",
+                self.registers.a.get_value(),
+                self.registers.f.get_value(),
+                self.registers.b.get_value(),
+                self.registers.c.get_value(),
+                self.registers.d.get_value(),
+                self.registers.e.get_value(),
+                self.registers.h.get_value(),
+                self.registers.l.get_value(),
+                self.registers.sp.get_value(),
+                self.registers.pc.get_value(),
+                pc_mem[0],
+                pc_mem[1],
+                pc_mem[2],
+                pc_mem[3]
+            );
+        });
+    }
+
     pub fn new() -> Result<CPU, Error> {
         Ok(CPU {
             registers: Registers::new(),
-            debug: CpuDebug::default()
+            debug: CpuDebug::default(),
+            halt: false
         })
     }
 }

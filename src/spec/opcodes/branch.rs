@@ -112,7 +112,7 @@ impl CPU {
             Instruction::RETI => {
                 let stack_val = self.pop_stack_word(mmu)?;
 
-                mmu.write_interrupt_enable_reg(true)?;
+                mmu.write_interrupt_enable_reg(true);
                 self.registers.pc.set_value(stack_val);
 
                 Ok(4)

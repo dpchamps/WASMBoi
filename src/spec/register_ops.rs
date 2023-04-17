@@ -59,10 +59,6 @@ impl FlagRegister {
         let flags = Flags::from(self.0);
         self.0 = FlagRegister::from(f(flags)).get_value();
     }
-
-    pub fn set_bits(&mut self, bits: FlagRegister) {
-        self.0 &= bits.0
-    }
 }
 
 pub trait CarryFlags {
@@ -129,26 +125,28 @@ impl CarryFlags for u16 {
 
 impl CarryFlags for i16 {
     fn half_carry_add(&self, other: &Self) -> bool {
-        (((self & 0xFFF) + (other & 0xFFF)) & 0x1000) == 0x1000
+        ((((*self as i8) & 0xF) + ((*other as i8) & 0xF)) & 0x10) == 0x10
     }
 
     fn half_carry_sub(&self, other: &Self) -> bool {
-        (((*self & 0xFFF) - (*other & 0xFFF)) & 0x1000) == 0x1000
+        ((((*self as i8) & 0xF) - ((*other as i8) & 0xF)) & 0x10) == 0x10
     }
 
     fn half_carry<F>(&self, value: &Self, mut f: F) -> bool
-    where
-        F: FnMut((Self, Self)) -> Self,
+        where
+            F: FnMut((Self, Self)) -> Self,
+            Self: Sized,
     {
-        f((*self & 0xFFF, *value & 0xFFF)) == 0x1000
+        f((*self & 0xf, *value & 0xF)) == 0x10
     }
 
     fn full_carry_add(&self, other: &Self) -> bool {
-        self.checked_add(*other).map(|_| false).unwrap_or(true)
+        ((((*self) & 0xFF) + ((*other) & 0xFF)) & 0x100) == 0x100
     }
 
     fn full_carry_sub(&self, other: &Self) -> bool {
-        self.checked_sub(*other).map(|_| false).unwrap_or(true)
+        ((((*self) & 0xFF) - ((*other) & 0xFF)) & 0x100) == 0x100
+
     }
 }
 
@@ -163,6 +161,20 @@ pub struct RegisterOp<T: Integer> {
 pub struct RegisterOpResult<T: Integer> {
     pub value: T,
     pub flags: FlagRegister,
+    pub mask: Option<FlagRegister>
+}
+
+impl <T: Integer> RegisterOpResult<T> {
+    pub fn set_mask(&mut self, mask: FlagRegister) {
+        self.mask = Some(mask)
+    }
+
+    pub fn get_masked_value(&self, last: u8) -> u8 {
+        let mask = self.mask.as_ref().map(|x| x.0).unwrap_or(0b11110000);
+        let result = (last & !mask) | (self.flags.0 & mask);
+
+        result
+    }
 }
 
 impl<T> RegisterOp<T>
@@ -216,7 +228,7 @@ where
 
         let result = self.value.rotate_right(cast(value).unwrap());
 
-        let z = false;
+        let z = result == T::from(0).unwrap();
         let n = false;
         let h = false;
 
@@ -292,7 +304,7 @@ where
     T: Integer,
 {
     pub fn new(value: T, flags: FlagRegister) -> Self {
-        RegisterOpResult { value, flags }
+        RegisterOpResult { value, flags, mask: None }
     }
 }
 
