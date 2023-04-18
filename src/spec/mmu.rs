@@ -76,8 +76,6 @@ pub struct MMU {
     interrupt_enable: u8,
     pub internal_ram: Box<[u8]>,
     hi_ram: Box<[u8]>,
-    // TODO: hw registers implemented as a solid block of mem. Pick these off into
-    //  separate datastructures as needed.
     hw_registers: HardwareRegister,
 }
 

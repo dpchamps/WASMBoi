@@ -8,6 +8,7 @@ use crate::spec::register::{RegisterError, Registers, TRegister};
 use std::convert::TryFrom;
 use std::env;
 use std::num::Wrapping;
+use crate::debug_logger::{DebugLogger, FromEnvList, cpu_logger::CPU_LOGGER};
 
 pub trait TCPU {
     type E;
@@ -21,72 +22,8 @@ pub trait TStackable {
     fn pop_stack_word(&mut self, mmu: &mut MMU) -> Result<u16, Error>;
 }
 
-pub struct CpuDebug {
-    current_instruction: bool,
-    current_register_values: bool,
-    alu: bool,
-    bitwise: bool,
-    control: bool,
-    ld: bool,
-    stack: bool,
-    interrupts: bool,
-    gb_doc: bool,
-}
-
-impl Default for CpuDebug {
-    fn default() -> Self {
-        let cpu_env = env::var("CPU_DEBUG").unwrap_or("".into());
-        let debug_list: Vec<&str> = cpu_env.split(',').collect();
-
-        CpuDebug {
-            current_instruction: debug_list.contains(&"PC"),
-            current_register_values: debug_list.contains(&"REG"),
-            alu: debug_list.contains(&"ALU"),
-            bitwise: debug_list.contains(&"BIT"),
-            control: debug_list.contains(&"CONTROL"),
-            ld: debug_list.contains(&"LD"),
-            stack: debug_list.contains(&"STACK"),
-            interrupts: debug_list.contains(&"INTS"),
-            gb_doc: debug_list.contains(&"GB_DOC"),
-        }
-    }
-}
-
-impl CpuDebug {
-    #[cfg(debug_assertions)]
-    pub fn log<F>(&self, t: &str, f: F)
-    where
-        F: Fn(),
-    {
-        let should_log = match t {
-            "PC" => self.current_instruction,
-            "REG" => self.current_register_values,
-            "ALU" => self.alu,
-            "BIT" => self.bitwise,
-            "CONTROL" => self.control,
-            "LD" => self.ld,
-            "STACK" => self.stack,
-            "INTS" => self.interrupts,
-            "GB_DOC" => self.gb_doc,
-            _ => false,
-        };
-
-        if should_log {
-            f()
-        }
-    }
-
-    #[cfg(not(debug_assertions))]
-    pub fn log<F>(&self, t: &str, f: F)
-    where
-        F: Fn() -> (),
-    {
-    }
-}
-
 pub struct CPU {
     pub(crate) registers: Registers,
-    pub(crate) debug: CpuDebug,
     pub(crate) halt: bool,
 }
 
@@ -128,14 +65,14 @@ impl TCPU for CPU {
             mmu.read_byte((Wrapping(*self.registers.pc.get_value()) + Wrapping(1)).0)
                 .map_err(Error::MmuError)?,
         ];
-        self.debug.log("PC", || {
+        CPU_LOGGER.log("PC", || {
             println!("[PC: {:#X}] Op: {}, Dat: [{:X?}]", last_pc, opcode, data)
         });
         self.registers
             .pc
             .set_value(*self.registers.pc.get_value() + opcode.size as u16);
         let cycles = self.execute(&opcode, &data, mmu)?;
-        self.debug.log("REG", || println!("\t{}", self.registers));
+        CPU_LOGGER.log("REG", || println!("\t{}", self.registers));
         Ok(cycles)
     }
 }
@@ -257,12 +194,12 @@ impl CPU {
 
     pub fn handle_interrupts(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
         if let Some(interrupt) = mmu.interrupts_enabled()? {
-            self.debug
+            CPU_LOGGER
                 .log("INTS", || println!("Handling Interrupt: {:?}", interrupt));
 
             let isr = interrupt.get_isr_location();
 
-            self.debug.log("INTS", || println!("Jumping to {:X}", isr));
+            CPU_LOGGER.log("INTS", || println!("Jumping to {:X}", isr));
 
             self.push_stack_word(*self.registers.pc.get_value(), mmu)?;
             self.registers.pc.set_value(isr);
@@ -277,7 +214,7 @@ impl CPU {
 
     #[cfg(debug_assertions)]
     pub fn gameboy_doc_debug(&self, mmu: &MMU) {
-        self.debug.log("GB_DOC", || {
+        CPU_LOGGER.log("GB_DOC", || {
             let pc_mem = [
                 mmu.read_byte(*self.registers.pc.get_value())
                     .map_err(Error::MmuError).unwrap(),
@@ -312,7 +249,6 @@ impl CPU {
     pub fn new() -> Result<CPU, Error> {
         Ok(CPU {
             registers: Registers::new(),
-            debug: CpuDebug::default(),
             halt: false,
         })
     }

@@ -1,16 +1,7 @@
-#![allow(dead_code)]
-#![allow(unused_imports)]
-#![allow(unused_variables)]
-mod dasm;
-mod mbc;
-mod spec;
-mod util;
-#[macro_use]
-extern crate impl_ops;
-extern crate core;
 
-use crate::spec::cpu::CPU;
-use crate::spec::gameboy::Peripheral;
+
+use wasmboi::spec::cpu::CPU;
+use wasmboi::spec::gameboy::{Peripheral, GameBoy};
 use std::env;
 use std::fs;
 
@@ -19,7 +10,7 @@ fn main() {
     // println!("Loading ${}", rom_location);
     let rom = fs::read(rom_location).unwrap();
 
-    let mut gameboy = spec::gameboy::GameBoy::new(&rom).unwrap_or_else(|e| {
+    let mut gameboy = GameBoy::new(&rom).unwrap_or_else(|e| {
         panic!(
             "Failed to initialize GameBoy with the following error: {:?}",
             e
