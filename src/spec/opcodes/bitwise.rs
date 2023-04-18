@@ -1,19 +1,19 @@
 use crate::dasm::InstructionData;
-use crate::spec::clock::Clock;
+
 use crate::spec::cpu::{Error, CPU};
 use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::TRegister;
-use crate::spec::register_ops::{FlagRegister, Flags, RegisterOp, RegisterOpResult};
+use crate::spec::register_ops::{FlagRegister, RegisterOp};
 
 impl CPU {
     pub(crate) fn evaluate_bitwise(
         &mut self,
         instruction_data: &InstructionData,
-        opcode_data: &[u8; 2],
-        mmu: &mut MMU,
+        _opcode_data: &[u8; 2],
+        _mmu: &mut MMU,
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::RLCA => {
@@ -45,7 +45,9 @@ impl CPU {
                     .registers
                     .op(|registers| RegisterOp::new(*registers.a.get_value()).rotate_right(1));
 
-                self.registers.f.set_value(FlagRegister::new(false, false, false, true).0 & *self.registers.f.get_value());
+                self.registers.f.set_value(
+                    FlagRegister::new(false, false, false, true).0 & *self.registers.f.get_value(),
+                );
 
                 self.registers.a.set_value(carry_flag & (value | 0x80));
 

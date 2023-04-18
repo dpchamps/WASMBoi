@@ -1,17 +1,18 @@
 use std::cell::RefCell;
 use std::fs;
-use std::sync::Arc;
-use WASMBoi::spec;
-use WASMBoi::spec::gameboy::{Peripheral};
-use ntest::{timeout};
 
+use ntest::timeout;
+use WASMBoi::spec;
+use WASMBoi::spec::gameboy::Peripheral;
 
 fn run_test(fixture_name: &str) -> Result<(), String> {
     let fixture_location = format!("./tests/fixtures/{}", fixture_name);
-    let rom = fs::read(&fixture_location).map_err(|_| format!("Failed to read fixture from location: {}", fixture_location))?;
+    let rom = fs::read(&fixture_location)
+        .map_err(|_| format!("Failed to read fixture from location: {}", fixture_location))?;
 
-    let mut serial_port_out = RefCell::new(String::new());
-    let mut gameboy = spec::gameboy::GameBoy::new(&rom).map_err(|e| format!("Failed to initialize gameboy with {:?}", e))?;
+    let serial_port_out = RefCell::new(String::new());
+    let mut gameboy = spec::gameboy::GameBoy::new(&rom)
+        .map_err(|e| format!("Failed to initialize gameboy with {:?}", e))?;
 
     gameboy.attach_peripheral(Peripheral::SerialPort(Box::new(|c| {
         if let Some(c) = c {
@@ -20,10 +21,12 @@ fn run_test(fixture_name: &str) -> Result<(), String> {
     })));
 
     while !serial_port_out.borrow().contains("Passed") {
-        gameboy.cycle().map_err(|e| format!("Failed to execute gameboy cycle with error {:?}", e))?;
+        gameboy
+            .cycle()
+            .map_err(|e| format!("Failed to execute gameboy cycle with error {:?}", e))?;
 
         if serial_port_out.borrow().to_lowercase().contains("failed") {
-            return Err(format!("{} received fail code from ROM", fixture_name))
+            return Err(format!("{} received fail code from ROM", fixture_name));
         }
     }
 

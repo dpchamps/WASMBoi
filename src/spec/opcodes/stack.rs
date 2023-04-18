@@ -1,5 +1,5 @@
 use crate::dasm::InstructionData;
-use crate::spec::clock::Clock;
+
 use crate::spec::cpu::{Error, TStackable, CPU};
 use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
@@ -10,7 +10,7 @@ impl CPU {
     pub(crate) fn evaluate_stack_op(
         &mut self,
         instruction_data: &InstructionData,
-        opcode_data: &[u8; 2],
+        _opcode_data: &[u8; 2],
         mmu: &mut MMU,
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
@@ -28,7 +28,7 @@ impl CPU {
                 let mut reg_pair = self.registers.reg_pair_from_qq(qq)?;
 
                 if qq == 0b11 {
-                    value = value & 0xFFF0;
+                    value &= 0xFFF0;
                 }
 
                 reg_pair.set_value_16(value);

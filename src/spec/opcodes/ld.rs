@@ -1,13 +1,13 @@
 use crate::dasm::InstructionData;
-use crate::spec::clock::Clock;
+
 use crate::spec::cpu::*;
 use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::{RegisterRefMut, TRegister};
-use crate::spec::register_ops::{CarryFlags, FlagRegister, Flags, RegisterOp};
-use crate::util::byte_ops::{extract_hi_lo, hi_lo_combine};
+use crate::spec::register_ops::RegisterOp;
+use crate::util::byte_ops::hi_lo_combine;
 use std::num::Wrapping;
 use std::ops::Add;
 

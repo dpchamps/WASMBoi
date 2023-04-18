@@ -16,7 +16,7 @@ impl Rom {
     }
 }
 
-impl Mbc for Rom{}
+impl Mbc for Rom {}
 
 impl MemoryRegion for Rom {
     type Error = MbcError;

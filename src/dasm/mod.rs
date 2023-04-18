@@ -1,8 +1,7 @@
-use crate::format_byte;
-use crate::spec::cartridge_header::{Cartridge, CartridgeError};
+use crate::spec::cartridge_header::Cartridge;
 use crate::spec::opcode::{instruction_lookup, Instruction};
-use crate::spec::register::Registers;
-use crate::util::byte_ops::{extract_lhs, extract_rhs, hi_lo_combine};
+
+use crate::util::byte_ops::{extract_lhs, extract_rhs};
 
 use crate::spec::mnemonic::Mnemonic;
 use std::collections::HashSet;

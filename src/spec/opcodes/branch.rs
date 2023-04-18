@@ -1,5 +1,5 @@
 use crate::dasm::InstructionData;
-use crate::spec::clock::Clock;
+
 use crate::spec::cpu::{Error, TStackable, CPU};
 use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
@@ -7,7 +7,6 @@ use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::TRegister;
 use crate::util::byte_ops::hi_lo_combine;
-use std::num::Wrapping;
 
 impl CPU {
     pub(crate) fn evaluate_branch(
@@ -41,7 +40,7 @@ impl CPU {
                 Ok(3)
             }
             Instruction::JR_PCDD => {
-                let offset = ((opcode_data[0] as i8) as i16);
+                let offset = (opcode_data[0] as i8) as i16;
                 // println!("\t\tPC:{:X}+{} ({})", *self.registers.pc.get_value() as i16, offset as i8, offset);
                 self.registers.pc.update_value_checked(|last_val| {
                     let result = ((*last_val) as i16).checked_add(offset).map(|x| x as u16);
@@ -55,7 +54,7 @@ impl CPU {
                 let data = opcode_data[0];
 
                 if self.registers.jump_condition(cc)? {
-                    let val = ((data as i8) as i16);
+                    let val = (data as i8) as i16;
 
                     // println!("\t\tPC:{:X}+{} ({})", *self.registers.pc.get_value() as i16, data as i8, val);
                     self.registers.pc.update_value_checked(|last| {

@@ -1,15 +1,15 @@
 #![allow(arithmetic_overflow)]
 
 use crate::dasm::InstructionData;
-use crate::spec::clock::Clock;
+
 use crate::spec::cpu::{Error, CPU};
 use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
-use crate::spec::register::{RegisterError, RegisterRefMut, RegisterType, TRegister};
-use crate::spec::register_ops::{FlagRegister, Flags, RegisterOp, RegisterOpResult};
-use crate::util::byte_ops::hi_lo_combine;
+use crate::spec::register::{RegisterError, RegisterRefMut, TRegister};
+use crate::spec::register_ops::{FlagRegister, RegisterOp};
+
 use std::num::Wrapping;
 use std::ops::Add;
 
@@ -57,7 +57,7 @@ impl CPU {
                     registers.a.set_value(result.value);
 
                     result.flags.update(|flags| {
-                        let mut next_flags = flags.clone();
+                        let mut next_flags = flags;
                         next_flags.n = 0;
 
                         next_flags
@@ -148,7 +148,7 @@ impl CPU {
             }
             Instruction::OR_R => {
                 self.registers.op_with_effect(|registers| {
-                    let mut reg_r_val = registers
+                    let reg_r_val = registers
                         .reg_from_byte(instruction_data.opcode_info.lo)?
                         .get_eight_bit_val()?;
                     let result = RegisterOp::new(*registers.a.get_value()).or(reg_r_val);
@@ -283,7 +283,7 @@ impl CPU {
                 Ok(1)
             }
             Instruction::CPL => {
-                let mut flags = self.registers.flag_register();
+                let flags = self.registers.flag_register();
                 let a_value = *self.registers.a.get_value();
 
                 self.registers.a.set_value(!a_value);
@@ -302,7 +302,6 @@ impl CPU {
 
                     result.set_mask(FlagRegister::new(false, true, true, true));
 
-
                     hl.set_value_16(result.value);
 
                     Ok(result)
@@ -312,8 +311,8 @@ impl CPU {
             }
             Instruction::ADD_SPN => {
                 self.registers.op_with_effect(|registers| {
-                    let mut result =
-                        RegisterOp::new(*registers.sp.get_value() as i16).add((opcode_data[0] as i8) as i16);
+                    let mut result = RegisterOp::new(*registers.sp.get_value() as i16)
+                        .add((opcode_data[0] as i8) as i16);
 
                     result.flags.update(|flags| {
                         let mut next = flags;

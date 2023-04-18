@@ -1,13 +1,12 @@
 #![allow(non_camel_case_types)]
 
-use std::convert::TryFrom;
-use std::ops::Range;
 use crate::mbc::rom::Rom;
 use crate::mbc::{mbc1::Mbc1, Mbc, MbcError};
-use crate::spec::cartridge_header::{Cartridge, CartridgeType};
+use crate::spec::cartridge_header::CartridgeType;
 use crate::spec::hardware_registers::{HardwareRegister, HardwareRegisterError, Interrupt};
 use crate::spec::memory_region::MemoryRegion;
-use crate::spec::mmu::Error::CreateError;
+use std::convert::TryFrom;
+use std::ops::Range;
 
 #[derive(Debug)]
 pub enum Error {
@@ -17,7 +16,7 @@ pub enum Error {
     MBCError(MbcError),
     HWError(HardwareRegisterError),
     UnusableWriteRegion,
-    InvalidInterruptFlagState
+    InvalidInterruptFlagState,
 }
 
 impl From<MbcError> for Error {
@@ -224,12 +223,16 @@ impl MMU {
     }
 
     #[cfg(debug_assertions)]
-    pub fn debug_print_range(&self, range: Range<u16>){
+    pub fn debug_print_range(&self, range: Range<u16>) {
         let mut chunk = vec![];
         let x = range.clone();
 
         for address in range {
-            chunk.push(format!("{:X}: {:X}", address, self.read_byte(address).unwrap()))
+            chunk.push(format!(
+                "{:X}: {:X}",
+                address,
+                self.read_byte(address).unwrap()
+            ))
         }
 
         println!("Chunk between {:X?}: {:?}", x, chunk);

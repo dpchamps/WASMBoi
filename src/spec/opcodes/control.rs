@@ -1,5 +1,5 @@
 use crate::dasm::InstructionData;
-use crate::spec::clock::Clock;
+
 use crate::spec::cpu::{Error, CPU};
 use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
@@ -10,7 +10,7 @@ impl CPU {
     pub(crate) fn evaluate_control(
         &mut self,
         instruction_data: &InstructionData,
-        opcode_data: &[u8; 2],
+        _opcode_data: &[u8; 2],
         mmu: &mut MMU,
     ) -> Result<u8, Error> {
         match instruction_data.instruction {

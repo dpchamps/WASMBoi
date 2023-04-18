@@ -1,9 +1,9 @@
-use crate::dasm::{DasmError, Disassembler, InstructionData};
-use crate::spec::clock::Clock;
+use crate::dasm::{DasmError, InstructionData};
+
 use crate::spec::mmu::{Error as MmuError, MMU};
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
-use crate::spec::opcodes::*;
+
 use crate::spec::register::{RegisterError, Registers, TRegister};
 use std::convert::TryFrom;
 use std::env;
@@ -30,13 +30,13 @@ pub struct CpuDebug {
     ld: bool,
     stack: bool,
     interrupts: bool,
-    gb_doc: bool
+    gb_doc: bool,
 }
 
 impl Default for CpuDebug {
     fn default() -> Self {
         let cpu_env = env::var("CPU_DEBUG").unwrap_or("".into());
-        let debug_list: Vec<&str> = cpu_env.split(",").collect();
+        let debug_list: Vec<&str> = cpu_env.split(',').collect();
 
         CpuDebug {
             current_instruction: debug_list.contains(&"PC"),
@@ -47,18 +47,16 @@ impl Default for CpuDebug {
             ld: debug_list.contains(&"LD"),
             stack: debug_list.contains(&"STACK"),
             interrupts: debug_list.contains(&"INTS"),
-            gb_doc: debug_list.contains(&"GB_DOC")
+            gb_doc: debug_list.contains(&"GB_DOC"),
         }
     }
 }
-
-
 
 impl CpuDebug {
     #[cfg(debug_assertions)]
     pub fn log<F>(&self, t: &str, f: F)
     where
-        F: Fn() -> ()
+        F: Fn(),
     {
         let should_log = match t {
             "PC" => self.current_instruction,
@@ -70,7 +68,7 @@ impl CpuDebug {
             "STACK" => self.stack,
             "INTS" => self.interrupts,
             "GB_DOC" => self.gb_doc,
-            _ => false
+            _ => false,
         };
 
         if should_log {
@@ -80,17 +78,16 @@ impl CpuDebug {
 
     #[cfg(not(debug_assertions))]
     pub fn log<F>(&self, t: &str, f: F)
-        where
-            F: Fn() -> ()
+    where
+        F: Fn() -> (),
     {
-
     }
 }
 
 pub struct CPU {
     pub(crate) registers: Registers,
     pub(crate) debug: CpuDebug,
-    pub(crate) halt: bool
+    pub(crate) halt: bool,
 }
 
 #[derive(Debug)]
@@ -121,7 +118,6 @@ impl TCPU for CPU {
     type E = Error;
 
     fn tick(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
-
         self.gameboy_doc_debug(mmu);
 
         let last_pc = *self.registers.pc.get_value();
@@ -133,18 +129,13 @@ impl TCPU for CPU {
                 .map_err(Error::MmuError)?,
         ];
         self.debug.log("PC", || {
-            println!("[PC: {:#X}] Op: {}, Dat: [{:X?}]",
-                     last_pc,
-                     opcode,
-                     data)
+            println!("[PC: {:#X}] Op: {}, Dat: [{:X?}]", last_pc, opcode, data)
         });
         self.registers
             .pc
             .set_value(*self.registers.pc.get_value() + opcode.size as u16);
         let cycles = self.execute(&opcode, &data, mmu)?;
-        self.debug.log("REG", || {
-            println!("\t{}", self.registers)
-        });
+        self.debug.log("REG", || println!("\t{}", self.registers));
         Ok(cycles)
     }
 }
@@ -161,13 +152,15 @@ impl TStackable for CPU {
     }
 
     fn push_stack_word(&mut self, value: u16, mmu: &mut MMU) -> Result<(), Error> {
-        self.registers.sp.update_value_checked(|sp| Ok(sp.checked_sub(2)))?;
+        self.registers
+            .sp
+            .update_value_checked(|sp| Ok(sp.checked_sub(2)))?;
         mmu.write_word(*self.registers.sp.get_value(), value)?;
 
         Ok(())
     }
 
-    fn pop_stack_byte(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
+    fn pop_stack_byte(&mut self, _mmu: &mut MMU) -> Result<u8, Error> {
         unimplemented!()
     }
 
@@ -202,7 +195,6 @@ impl CPU {
 
         InstructionData::try_from((op, cb_byte)).map_err(Error::DecodeError)
     }
-
 
     fn execute(
         &mut self,
@@ -265,9 +257,8 @@ impl CPU {
 
     pub fn handle_interrupts(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
         if let Some(interrupt) = mmu.interrupts_enabled()? {
-            self.debug.log("INTS", || {
-                println!("Handling Interrupt: {:?}", interrupt)
-            });
+            self.debug
+                .log("INTS", || println!("Handling Interrupt: {:?}", interrupt));
 
             let isr = interrupt.get_isr_location();
 
@@ -278,7 +269,7 @@ impl CPU {
             mmu.write_interrupt_enable_reg(false);
             mmu.set_interrupt_bit(interrupt, false)?;
 
-            return Ok(5)
+            return Ok(5);
         }
 
         Ok(0)
@@ -322,7 +313,7 @@ impl CPU {
         Ok(CPU {
             registers: Registers::new(),
             debug: CpuDebug::default(),
-            halt: false
+            halt: false,
         })
     }
 }

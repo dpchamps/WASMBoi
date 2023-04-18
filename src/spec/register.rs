@@ -1,13 +1,11 @@
-use crate::spec::cpu::Error;
 use crate::spec::mmu::Error as MmuError;
-use crate::spec::register_ops::{CarryFlags, FlagRegister, Flags, RegisterOp, RegisterOpResult};
+use crate::spec::register_ops::{CarryFlags, FlagRegister, Flags, RegisterOpResult};
 use crate::util::byte_ops::*;
 use num::traits::{WrappingAdd, WrappingSub};
 use num::PrimInt;
-use num_integer::Integer;
+
 use std::fmt::{Binary, Display, Formatter, UpperHex};
 use std::num::Wrapping;
-use std::ops::Index;
 
 #[derive(Debug)]
 pub enum RegisterError {

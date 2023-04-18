@@ -162,7 +162,7 @@ impl Cartridge {
                 ..cartridge_header_address::GAME_TITLE + GAME_TITLE_LENGTH],
         ) {
             Ok(v) => v,
-            Err(x) => return Err(CartridgeError::BadRomData),
+            Err(_x) => return Err(CartridgeError::BadRomData),
         };
 
         let rom_size =
@@ -200,8 +200,6 @@ impl Cartridge {
 #[cfg(test)]
 mod cartridge_header_test {
     use crate::spec::cartridge_header::{Cartridge, CartridgeType};
-    use crate::*;
-    use std::fs;
 
     fn get_header_fixture() -> Vec<u8> {
         vec![

@@ -2,34 +2,27 @@ use crate::spec::cartridge_header::{Cartridge, CartridgeError};
 use crate::spec::clock::{Clock, TimerError};
 use crate::spec::cpu::{Error as CpuError, CPU, TCPU};
 use crate::spec::mmu::{Error as MmuError, MMU};
-use crate::spec::register::TRegister;
 
 pub enum Peripheral<'a> {
-    SerialPort(Box<dyn FnMut(Option<char>) -> () + 'a>)
+    SerialPort(Box<dyn FnMut(Option<char>) + 'a>),
 }
 
-pub struct GameBoy<'a>
-{
+pub struct GameBoy<'a> {
     cartridge: Cartridge,
     clock: Clock,
     cpu: CPU,
     mmu: MMU,
-    peripherals: Vec<Peripheral<'a>>
+    peripherals: Vec<Peripheral<'a>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum GameBoyError {
+    #[default]
     Unknown,
     Cpu(CpuError),
     Mmu(MmuError),
     Cartridge(CartridgeError),
-    Timer(TimerError)
-}
-
-impl Default for GameBoyError {
-    fn default() -> Self {
-        GameBoyError::Unknown
-    }
+    Timer(TimerError),
 }
 
 impl From<CpuError> for GameBoyError {
@@ -51,10 +44,12 @@ impl From<CartridgeError> for GameBoyError {
 }
 
 impl From<TimerError> for GameBoyError {
-    fn from(e: TimerError) -> Self { GameBoyError::Timer(e)}
+    fn from(e: TimerError) -> Self {
+        GameBoyError::Timer(e)
+    }
 }
 
-impl <'a> GameBoy<'a> {
+impl<'a> GameBoy<'a> {
     pub fn new(rom: &[u8]) -> Result<GameBoy, GameBoyError> {
         // println!("Loading Cartridge Header");
         let cartridge = Cartridge::new(rom)?;
@@ -72,7 +67,7 @@ impl <'a> GameBoy<'a> {
             mmu,
             clock,
             cartridge,
-            peripherals: vec![]
+            peripherals: vec![],
         })
     }
 
@@ -101,7 +96,6 @@ impl <'a> GameBoy<'a> {
     }
 
     pub fn start(&mut self) -> Result<(), GameBoyError> {
-
         loop {
             self.cycle()?;
         }
@@ -130,8 +124,7 @@ impl <'a> GameBoy<'a> {
         Ok(())
     }
 
-    pub fn attach_peripheral(&mut self, p: Peripheral<'a>)
-    {
+    pub fn attach_peripheral(&mut self, p: Peripheral<'a>) {
         self.peripherals.push(p);
     }
 }

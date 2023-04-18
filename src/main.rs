@@ -10,9 +10,9 @@ extern crate impl_ops;
 extern crate core;
 
 use crate::spec::cpu::CPU;
+use crate::spec::gameboy::Peripheral;
 use std::env;
 use std::fs;
-use crate::spec::gameboy::Peripheral;
 
 fn main() {
     let rom_location = env::var("ROM").unwrap();

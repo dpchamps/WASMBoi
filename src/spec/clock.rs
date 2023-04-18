@@ -1,6 +1,6 @@
-use std::num::Wrapping;
 use crate::spec::hardware_registers::Interrupt;
-use crate::spec::mmu::{MMU, Error as MMUError};
+use crate::spec::mmu::{Error as MMUError, MMU};
+use std::num::Wrapping;
 
 const DIV_ADDR: u16 = 0xFF04;
 const TIMA_ADDR: u16 = 0xFF05;
@@ -9,30 +9,26 @@ const TAC_ADDR: u16 = 0xFF07;
 
 #[derive(Debug)]
 pub enum TimerError {
-    MMUError(MMUError)
+    MMUError(MMUError),
 }
 
+#[derive(Default)]
 pub enum SpeedMode {
+    #[default]
     Single,
-    Double
-}
-
-impl Default for SpeedMode {
-    fn default() -> Self {
-        SpeedMode::Single
-    }
+    Double,
 }
 
 impl SpeedMode {
     pub fn oscillation(&self) -> usize {
         match self {
             SpeedMode::Single => 4194300,
-            SpeedMode::Double => 8388600
+            SpeedMode::Double => 8388600,
         }
     }
 }
 
-impl From<MMUError> for TimerError{
+impl From<MMUError> for TimerError {
     fn from(value: MMUError) -> Self {
         TimerError::MMUError(value)
     }
@@ -43,13 +39,13 @@ pub struct Clock {
     cycles: usize,
     speed_mode: SpeedMode,
     div_cycles: usize,
-    tima_cycles: usize
+    tima_cycles: usize,
 }
 
 #[derive(Debug)]
 pub struct TimerControl {
     enabled: bool,
-    clock_select: usize
+    clock_select: usize,
 }
 
 impl From<u8> for TimerControl {
@@ -60,12 +56,12 @@ impl From<u8> for TimerControl {
             01 => 16,
             10 => 64,
             11 => 256,
-            _ => unreachable!()
+            _ => unreachable!(),
         };
 
         Self {
             enabled,
-            clock_select
+            clock_select,
         }
     }
 }
@@ -84,7 +80,7 @@ impl Clock {
     }
 
     pub fn finalize_cycle(&mut self, mmu: &mut MMU) -> Result<usize, TimerError> {
-        let current_cpu_frequency = self.speed_mode.oscillation();
+        let _current_cpu_frequency = self.speed_mode.oscillation();
 
         self.update_tima(mmu)?;
         self.update_div(mmu)?;
@@ -102,7 +98,7 @@ impl Clock {
         // println!("{:?}: {}/{}", timer_control, self.tima_cycles, tac_frequency);
 
         if !timer_control.enabled {
-            return Ok(())
+            return Ok(());
         }
 
         self.tima_cycles += self.t_cycles();
@@ -125,8 +121,8 @@ impl Clock {
         Ok(())
     }
 
-    fn update_div(&mut self, mmu: &mut MMU) -> Result<(), TimerError>{
-        let div = mmu.read_byte(DIV_ADDR)?;
+    fn update_div(&mut self, mmu: &mut MMU) -> Result<(), TimerError> {
+        let _div = mmu.read_byte(DIV_ADDR)?;
         let div_frequency = 255;
 
         self.div_cycles += self.t_cycles();
@@ -137,7 +133,6 @@ impl Clock {
             mmu.write_byte(DIV_ADDR, next_div.0)?;
             self.div_cycles = 0;
         }
-
 
         Ok(())
     }

@@ -1,4 +1,3 @@
-use std::ops::RangeInclusive;
 use crate::spec::memory_region::MemoryRegion;
 
 pub mod mbc1;
@@ -10,6 +9,4 @@ pub enum MbcError {
     Write(u16, u8),
 }
 
-pub trait Mbc: MemoryRegion<Error = MbcError> {
-
-}
+pub trait Mbc: MemoryRegion<Error = MbcError> {}

@@ -1,6 +1,6 @@
 use crate::mbc::{Mbc, MbcError};
-use std::num::Wrapping;
 use crate::spec::memory_region::MemoryRegion;
+use std::num::Wrapping;
 
 #[derive(Default)]
 pub struct Mbc1 {

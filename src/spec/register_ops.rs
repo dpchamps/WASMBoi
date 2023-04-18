@@ -1,13 +1,9 @@
-use std::ffi::c_void;
-use std::num::Wrapping;
-use std::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, Deref};
-use std::{fmt, u16};
+use std::ops::{BitAnd, BitOr, Deref};
+use std::u16;
 
-use crate::spec::cpu::Error::Default;
 use crate::util::byte_ops::hi_lo_combine;
 use num::traits::{WrappingAdd, WrappingSub};
 use num::{cast, PrimInt as Integer};
-use std::ops;
 
 #[derive(Debug, Clone)]
 pub struct Flags {
@@ -133,9 +129,9 @@ impl CarryFlags for i16 {
     }
 
     fn half_carry<F>(&self, value: &Self, mut f: F) -> bool
-        where
-            F: FnMut((Self, Self)) -> Self,
-            Self: Sized,
+    where
+        F: FnMut((Self, Self)) -> Self,
+        Self: Sized,
     {
         f((*self & 0xf, *value & 0xF)) == 0x10
     }
@@ -146,7 +142,6 @@ impl CarryFlags for i16 {
 
     fn full_carry_sub(&self, other: &Self) -> bool {
         ((((*self) & 0xFF) - ((*other) & 0xFF)) & 0x100) == 0x100
-
     }
 }
 
@@ -161,19 +156,18 @@ pub struct RegisterOp<T: Integer> {
 pub struct RegisterOpResult<T: Integer> {
     pub value: T,
     pub flags: FlagRegister,
-    pub mask: Option<FlagRegister>
+    pub mask: Option<FlagRegister>,
 }
 
-impl <T: Integer> RegisterOpResult<T> {
+impl<T: Integer> RegisterOpResult<T> {
     pub fn set_mask(&mut self, mask: FlagRegister) {
         self.mask = Some(mask)
     }
 
     pub fn get_masked_value(&self, last: u8) -> u8 {
         let mask = self.mask.as_ref().map(|x| x.0).unwrap_or(0b11110000);
-        let result = (last & !mask) | (self.flags.0 & mask);
 
-        result
+        (last & !mask) | (self.flags.0 & mask)
     }
 }
 
@@ -304,7 +298,11 @@ where
     T: Integer,
 {
     pub fn new(value: T, flags: FlagRegister) -> Self {
-        RegisterOpResult { value, flags, mask: None }
+        RegisterOpResult {
+            value,
+            flags,
+            mask: None,
+        }
     }
 }
 
@@ -351,15 +349,15 @@ mod register_ops_test {
     fn addition_half_carry_u8() {
         let x: u8 = 62;
 
-        assert_eq!(true, x.half_carry_add(&35));
-        assert_eq!(false, x.half_carry_add(&0))
+        assert!(x.half_carry_add(&35));
+        assert!(!x.half_carry_add(&0))
     }
 
     #[test]
     fn subtraction_half_carry_u8() {
         let x: u8 = 0x3C;
 
-        assert_eq!(true, x.half_carry_sub(&0x2F))
+        assert!(x.half_carry_sub(&0x2F))
     }
 
     #[test]
