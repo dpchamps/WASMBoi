@@ -4,17 +4,17 @@ use crate::spec::cpu::{Error as CpuError, CPU, TCPU};
 use crate::spec::mmu::{Error as MmuError, MMU};
 use crate::spec::register::TRegister;
 
-pub enum Peripheral {
-    SerialPort(Box<dyn Fn(Option<char>) -> ()>)
+pub enum Peripheral<'a> {
+    SerialPort(Box<dyn FnMut(Option<char>) -> () + 'a>)
 }
 
-pub struct GameBoy
+pub struct GameBoy<'a>
 {
     cartridge: Cartridge,
     clock: Clock,
     cpu: CPU,
     mmu: MMU,
-    peripherals: Vec<Peripheral>
+    peripherals: Vec<Peripheral<'a>>
 }
 
 #[derive(Debug)]
@@ -54,7 +54,7 @@ impl From<TimerError> for GameBoyError {
     fn from(e: TimerError) -> Self { GameBoyError::Timer(e)}
 }
 
-impl GameBoy {
+impl <'a> GameBoy<'a> {
     pub fn new(rom: &[u8]) -> Result<GameBoy, GameBoyError> {
         // println!("Loading Cartridge Header");
         let cartridge = Cartridge::new(rom)?;
@@ -95,6 +95,8 @@ impl GameBoy {
             self.cpu.halt = false;
         }
 
+        self.handle_peripherals()?;
+
         Ok(self.clock.finalize_cycle(&mut self.mmu)?)
     }
 
@@ -102,25 +104,13 @@ impl GameBoy {
 
         loop {
             self.cycle()?;
-            self.handle_peripherals()?;
-
-            // let mut p = &self.peripherals[0];
-            // p(self)
-
-            // let sc = self.mmu.read_byte(0xFF02)?;
-            // let c = self.mmu.read_byte(0xFF01)? as char;
-            //
-            // if sc == 0x81 {
-            //     self.mmu.write_byte(0xFF02, 0)?;
-            //     print!("{}", c);
-            // }
         }
 
         Ok(())
     }
 
     fn handle_peripherals(&mut self) -> Result<(), GameBoyError> {
-        for p in self.peripherals.iter() {
+        for p in self.peripherals.iter_mut() {
             match p {
                 Peripheral::SerialPort(f) => {
                     let sc = self.mmu.read_byte(0xFF02)?;
@@ -140,7 +130,7 @@ impl GameBoy {
         Ok(())
     }
 
-    pub fn attach_peripheral(&mut self, p: Peripheral)
+    pub fn attach_peripheral(&mut self, p: Peripheral<'a>)
     {
         self.peripherals.push(p);
     }
