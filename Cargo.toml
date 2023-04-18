@@ -1,5 +1,5 @@
 [package]
-name = "WASMBoi"
+name = "wasmboi"
 version = "0.1.0"
 authors = ["David Campion <David.Campion@walmartlabs.com>"]
 edition = "2018"

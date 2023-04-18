@@ -1,4 +1,4 @@
-use std::ops::{BitAnd, BitOr, Deref};
+use std::ops::{Deref};
 use std::u16;
 
 use crate::util::byte_ops::hi_lo_combine;

@@ -9,7 +9,6 @@ use crate::spec::register::{RegisterError, RegisterRefMut, TRegister};
 use crate::spec::register_ops::{FlagRegister, RegisterOp};
 
 use std::num::Wrapping;
-use std::ops::Add;
 
 impl CPU {
     pub(crate) fn evaluate_alu(

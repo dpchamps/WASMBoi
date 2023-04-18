@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::fs;
 
 use ntest::timeout;
-use WASMBoi::spec;
-use WASMBoi::spec::gameboy::Peripheral;
+use wasmboi::spec;
+use wasmboi::spec::gameboy::Peripheral;
 
 fn run_test(fixture_name: &str) -> Result<(), String> {
     let fixture_location = format!("./tests/fixtures/{}", fixture_name);

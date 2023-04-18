@@ -9,7 +9,6 @@ use crate::spec::register::{RegisterRefMut, TRegister};
 use crate::spec::register_ops::RegisterOp;
 use crate::util::byte_ops::hi_lo_combine;
 use std::num::Wrapping;
-use std::ops::Add;
 
 impl CPU {
     pub(crate) fn evaluate_ld(

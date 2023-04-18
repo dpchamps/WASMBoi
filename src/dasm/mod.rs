@@ -1,10 +1,8 @@
-use crate::spec::cartridge_header::Cartridge;
 use crate::spec::opcode::{instruction_lookup, Instruction};
 
 use crate::util::byte_ops::{extract_lhs, extract_rhs};
 
 use crate::spec::mnemonic::Mnemonic;
-use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::fmt;
 
@@ -17,13 +15,13 @@ pub enum DasmError {
     PartialDASM(String),
 }
 
-pub struct Disassembler {
-    branches: Vec<u16>,
-    visited: HashSet<u16>,
-    labels: HashSet<u16>,
-    buffer: Vec<u8>,
-    cartridge: Cartridge,
-}
+// pub struct Disassembler {
+//     branches: Vec<u16>,
+//     visited: HashSet<u16>,
+//     labels: HashSet<u16>,
+//     buffer: Vec<u8>,
+//     cartridge: Cartridge,
+// }
 
 #[derive(Debug, Clone)]
 pub struct ByteData {

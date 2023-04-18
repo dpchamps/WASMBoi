@@ -8,6 +8,7 @@ pub enum Peripheral<'a> {
 }
 
 pub struct GameBoy<'a> {
+    #[allow(dead_code)]
     cartridge: Cartridge,
     clock: Clock,
     cpu: CPU,
@@ -99,8 +100,6 @@ impl<'a> GameBoy<'a> {
         loop {
             self.cycle()?;
         }
-
-        Ok(())
     }
 
     fn handle_peripherals(&mut self) -> Result<(), GameBoyError> {
