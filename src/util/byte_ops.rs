@@ -1,4 +1,3 @@
-#[allow(arithmetic_overflow)]
 pub fn left_shift(b: u8) -> u16 {
     (b as u16) << 8
 }

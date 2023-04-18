@@ -1,5 +1,3 @@
-#![allow(arithmetic_overflow)]
-
 use crate::dasm::InstructionData;
 
 use crate::spec::cpu::{Error, CPU};
