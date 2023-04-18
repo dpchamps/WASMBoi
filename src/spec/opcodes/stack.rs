@@ -15,7 +15,7 @@ impl CPU {
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::PUSH_RR => {
-                let qq = instruction_data.byte_data.lhs >> 1;
+                let qq = instruction_data.opcode_info.hi >> 1;
                 let value = self.registers.reg_pair_from_qq(qq)?.get_value();
 
                 self.push_stack_word(value, mmu)?;
@@ -23,7 +23,7 @@ impl CPU {
                 Ok(4)
             }
             Instruction::POP_RR => {
-                let qq = instruction_data.byte_data.lhs >> 1;
+                let qq = instruction_data.opcode_info.hi >> 1;
                 let mut value = self.pop_stack_word(mmu)?;
                 let mut reg_pair = self.registers.reg_pair_from_qq(qq)?;
 

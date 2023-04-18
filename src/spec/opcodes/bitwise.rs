@@ -73,7 +73,7 @@ impl CPU {
                 let carry_flag = (self.registers.flag_register().c << 7) | 0x7F;
 
                 self.registers.op_with_effect(|registers| {
-                    let mut reg = registers.reg_from_byte(instruction_data.byte_data.rhs)?;
+                    let mut reg = registers.reg_from_byte(instruction_data.opcode_info.lo)?;
                     let mut result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_right(1);
                     reg.set_eight_bit_val(carry_flag & (result.value | 0x80))?;
 
@@ -99,7 +99,7 @@ impl CPU {
             }
             Instruction::SWAP_R => {
                 self.registers.op_with_effect(|registers| {
-                    let mut reg = registers.reg_from_byte(instruction_data.byte_data.rhs)?;
+                    let mut reg = registers.reg_from_byte(instruction_data.opcode_info.lo)?;
                     let result = RegisterOp::new(reg.get_eight_bit_val()?).swap();
 
                     reg.set_eight_bit_val(result.value)?;
@@ -111,7 +111,7 @@ impl CPU {
             }
             Instruction::SWAP_HL => {
                 self.registers.op_with_effect(|registers| {
-                    let mut reg = registers.reg_from_byte(instruction_data.byte_data.rhs)?;
+                    let mut reg = registers.reg_from_byte(instruction_data.opcode_info.lo)?;
                     let result = RegisterOp::new(reg.get_sixtn_bit_val()?).swap();
 
                     reg.set_sixtn_bit_val(result.value)?;
@@ -129,7 +129,7 @@ impl CPU {
             }
             Instruction::SRL_R => {
                 self.registers.op_with_effect(|registers| {
-                    let mut reg = registers.reg_from_byte(instruction_data.byte_data.rhs)?;
+                    let mut reg = registers.reg_from_byte(instruction_data.opcode_info.lo)?;
                     let result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_right(1);
 
                     reg.set_eight_bit_val(0b01111111 & result.value)?;
@@ -149,10 +149,10 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::SET_NR => {
-                let bit = 1 << instruction_data.byte_data.lhs;
+                let bit = 1 << instruction_data.opcode_info.hi;
                 let mut reg = self
                     .registers
-                    .reg_from_byte(instruction_data.byte_data.rhs)?;
+                    .reg_from_byte(instruction_data.opcode_info.lo)?;
 
                 reg.set_eight_bit_val(reg.get_eight_bit_val()? | bit)?;
 

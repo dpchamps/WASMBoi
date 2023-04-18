@@ -203,6 +203,7 @@ impl CPU {
         InstructionData::try_from((op, cb_byte)).map_err(Error::DecodeError)
     }
 
+
     fn execute(
         &mut self,
         instruction_data: &InstructionData,

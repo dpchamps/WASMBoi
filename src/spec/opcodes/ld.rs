@@ -22,11 +22,11 @@ impl CPU {
             Instruction::LD_RR => {
                 let r_prime_value = self
                     .registers
-                    .reg_from_byte(instruction_data.byte_data.rhs)?
+                    .reg_from_byte(instruction_data.opcode_info.lo)?
                     .get_eight_bit_val()?;
                 let mut r = self
                     .registers
-                    .reg_from_byte(instruction_data.byte_data.lhs)?;
+                    .reg_from_byte(instruction_data.opcode_info.hi)?;
                 // println!("\t\t {:?} <- {:X}", r, r_prime_value);
 
                 r.set_eight_bit_val(r_prime_value)?;
@@ -36,7 +36,7 @@ impl CPU {
             Instruction::LD_RN => {
                 match self
                     .registers
-                    .reg_from_byte(instruction_data.byte_data.lhs)?
+                    .reg_from_byte(instruction_data.opcode_info.hi)?
                 {
                     RegisterRefMut::Byte(byte_ref) => {
                         // println!("\t\t {:?} <- {:X}", byte_ref, opcode_data[0]);
@@ -53,7 +53,7 @@ impl CPU {
                 let value = mmu.read_byte(self.registers.hl())?;
                 let mut reg = self
                     .registers
-                    .reg_from_byte(instruction_data.byte_data.lhs)?;
+                    .reg_from_byte(instruction_data.opcode_info.hi)?;
 
                 reg.set_eight_bit_val(value)?;
 
@@ -62,7 +62,7 @@ impl CPU {
             Instruction::LD_HLR => {
                 let reg_r_value = self
                     .registers
-                    .reg_from_byte(instruction_data.byte_data.rhs)?
+                    .reg_from_byte(instruction_data.opcode_info.lo)?
                     .get_eight_bit_val()?;
                 mmu.write_byte(self.registers.hl(), reg_r_value)?;
 
@@ -147,7 +147,7 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::LD_RRNN => {
-                let dd = instruction_data.byte_data.lhs >> 1;
+                let dd = instruction_data.opcode_info.hi >> 1;
                 let mut reg_pair = self.registers.reg_pair_from_dd(dd)?;
                 // println!("\t\t{:?} <- {:X?}", reg_pair, opcode_data);
 

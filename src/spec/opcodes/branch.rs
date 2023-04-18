@@ -29,7 +29,7 @@ impl CPU {
                 Ok(1)
             }
             Instruction::JP_FNN => {
-                let cc = instruction_data.byte_data.lhs & 0b011;
+                let cc = instruction_data.opcode_info.hi & 0b011;
                 let address = hi_lo_combine(opcode_data[1], opcode_data[0]);
 
                 if self.registers.jump_condition(cc)? {
@@ -51,7 +51,7 @@ impl CPU {
                 Ok(3)
             }
             Instruction::JR_FPCDD => {
-                let cc = instruction_data.byte_data.lhs & 0b011;
+                let cc = instruction_data.opcode_info.hi & 0b011;
                 let data = opcode_data[0];
 
                 if self.registers.jump_condition(cc)? {
@@ -78,7 +78,7 @@ impl CPU {
                 Ok(6)
             }
             Instruction::CALL_FNN => {
-                let cc = instruction_data.byte_data.lhs & 0b11;
+                let cc = instruction_data.opcode_info.hi & 0b11;
 
                 if self.registers.jump_condition(cc)? {
                     self.push_stack_word(*self.registers.pc.get_value(), mmu)?;
@@ -98,7 +98,7 @@ impl CPU {
                 Ok(4)
             }
             Instruction::RET_F => {
-                let cc = instruction_data.byte_data.lhs & 0b011;
+                let cc = instruction_data.opcode_info.hi & 0b011;
 
                 if self.registers.jump_condition(cc)? {
                     let stack_val = self.pop_stack_word(mmu)?;
@@ -121,7 +121,7 @@ impl CPU {
                 self.push_stack_word(*self.registers.pc.get_value(), mmu)?;
                 self.registers
                     .pc
-                    .set_value((instruction_data.byte_data.lhs as u16) * 8);
+                    .set_value((instruction_data.opcode_info.hi as u16) * 8);
                 Ok(4)
             }
             _ => Err(unexpected_op(&instruction_data.mnemonic, &Mnemonic::PUSH)),

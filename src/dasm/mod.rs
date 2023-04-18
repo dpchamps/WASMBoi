@@ -28,15 +28,15 @@ pub struct Disassembler {
 
 #[derive(Debug, Clone)]
 pub struct ByteData {
-    pub lhs: u8,
-    pub rhs: u8,
+    pub hi: u8,
+    pub lo: u8,
 }
 
 impl From<u8> for ByteData {
     fn from(byte: u8) -> Self {
         ByteData {
-            lhs: extract_lhs(byte),
-            rhs: extract_rhs(byte),
+            hi: extract_lhs(byte),
+            lo: extract_rhs(byte),
         }
     }
 }
@@ -47,7 +47,7 @@ pub struct InstructionData {
     pub size: usize,
     pub instruction: Instruction,
     pub mnemonic: Mnemonic,
-    pub byte_data: ByteData,
+    pub opcode_info: ByteData,
 }
 
 impl TryFrom<(u8, Option<u8>)> for InstructionData {
@@ -69,7 +69,7 @@ impl TryFrom<(u8, Option<u8>)> for InstructionData {
             instruction,
             size,
             mnemonic,
-            byte_data,
+            opcode_info: byte_data,
         })
     }
 }
@@ -79,7 +79,7 @@ impl fmt::Display for InstructionData {
         write!(
             f,
             "{:#X}: {:?} (size: {}) {:?}",
-            self.byte, self.instruction, self.size, self.byte_data
+            self.byte, self.instruction, self.size, self.opcode_info
         )
     }
 }

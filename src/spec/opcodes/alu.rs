@@ -24,7 +24,7 @@ impl CPU {
             Instruction::ADD_AR => {
                 self.registers.op_with_effect(|registers| {
                     let reg_r_val = registers
-                        .reg_from_byte(instruction_data.byte_data.rhs)?
+                        .reg_from_byte(instruction_data.opcode_info.lo)?
                         .get_eight_bit_val()?;
                     let op = RegisterOp::new(*registers.a.get_value()).add(reg_r_val);
 
@@ -116,7 +116,7 @@ impl CPU {
             Instruction::XOR_R => {
                 let reg_r_value = self
                     .registers
-                    .reg_from_byte(instruction_data.byte_data.rhs)?
+                    .reg_from_byte(instruction_data.opcode_info.lo)?
                     .get_eight_bit_val()?;
                 self.registers.op_with_effect(|registers| {
                     let result = RegisterOp::new(*registers.a.get_value()).xor(reg_r_value);
@@ -149,7 +149,7 @@ impl CPU {
             Instruction::OR_R => {
                 self.registers.op_with_effect(|registers| {
                     let mut reg_r_val = registers
-                        .reg_from_byte(instruction_data.byte_data.rhs)?
+                        .reg_from_byte(instruction_data.opcode_info.lo)?
                         .get_eight_bit_val()?;
                     let result = RegisterOp::new(*registers.a.get_value()).or(reg_r_val);
 
@@ -175,7 +175,7 @@ impl CPU {
             Instruction::CP_R => {
                 let value = self
                     .registers
-                    .reg_from_byte(instruction_data.byte_data.rhs)?
+                    .reg_from_byte(instruction_data.opcode_info.lo)?
                     .get_eight_bit_val()?;
                 self.registers
                     .op(|registers| RegisterOp::new(*registers.a.get_value()).sub(value));
@@ -198,7 +198,7 @@ impl CPU {
             }
             Instruction::INC_R => {
                 self.registers.op_with_effect(|registers| {
-                    let byte_reg = registers.reg_from_byte(instruction_data.byte_data.lhs)?;
+                    let byte_reg = registers.reg_from_byte(instruction_data.opcode_info.hi)?;
 
                     match byte_reg {
                         RegisterRefMut::Byte(reg) => {
@@ -218,7 +218,7 @@ impl CPU {
             }
             Instruction::DEC_R => {
                 self.registers.op_with_effect(|registers| {
-                    let byte_reg = registers.reg_from_byte(instruction_data.byte_data.lhs)?;
+                    let byte_reg = registers.reg_from_byte(instruction_data.opcode_info.hi)?;
 
                     match byte_reg {
                         RegisterRefMut::Byte(reg) => {
@@ -294,7 +294,7 @@ impl CPU {
                 Ok(1)
             }
             Instruction::ADD_HLRR => {
-                let dd = instruction_data.byte_data.lhs >> 1;
+                let dd = instruction_data.opcode_info.hi >> 1;
                 let reg_value = self.registers.reg_pair_from_dd(dd)?.get_value();
                 self.registers.op_with_effect(|register| {
                     let mut hl = register.hl_mut();
@@ -329,7 +329,7 @@ impl CPU {
                 Ok(2)
             }
             Instruction::INC_RR => {
-                let dd = instruction_data.byte_data.lhs >> 1;
+                let dd = instruction_data.opcode_info.hi >> 1;
                 let mut reg_pair = self.registers.reg_pair_from_dd(dd)?;
                 let result = Wrapping(reg_pair.get_value()) + Wrapping(1);
 
@@ -337,7 +337,7 @@ impl CPU {
                 Ok(2)
             }
             Instruction::DEC_RR => {
-                let dd = instruction_data.byte_data.lhs >> 1;
+                let dd = instruction_data.opcode_info.hi >> 1;
                 self.registers.op_with_effect(|registers| {
                     let mut reg_pair = registers.reg_pair_from_dd(dd)?;
                     let mut result = RegisterOp::new(reg_pair.get_value()).sub(1);

@@ -78,7 +78,6 @@ impl <'a> GameBoy<'a> {
 
     pub fn cycle(&mut self) -> Result<usize, GameBoyError> {
         // The effect of ei is delayed by one instruction.
-        // The effect of ei is delayed by one instruction.
         // This means that ei followed immediately by di does not allow any interrupts between them.
         let can_handle_this_cycle = self.mmu.enable_interrupts;
 
