@@ -49,8 +49,10 @@ impl CPU {
             }
             Instruction::ADC_AN => {
                 self.registers.op_with_effect(|registers| {
-                    let result =
-                        RegisterOp::from(RegisterOp::new(*registers.a.get_value()).add(opcode_data[0])).add(registers.flag_register().c);
+                    let result = RegisterOp::from(
+                        RegisterOp::new(*registers.a.get_value()).add(opcode_data[0]),
+                    )
+                    .add(registers.flag_register().c);
 
                     registers.a.set_value(result.value);
 
