@@ -75,7 +75,6 @@ fn blargg_07_jr_jp_call_ret_rst() -> Result<(), String> {
     run_test("07_jr_jp_call_ret_rst.gb")
 }
 
-#[ignore]
 #[test]
 #[timeout(2000)]
 fn blargg_08_misc_instrs() -> Result<(), String> {

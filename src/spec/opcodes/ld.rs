@@ -112,10 +112,17 @@ impl CPU {
                 Ok(4)
             }
             Instruction::LD_AFF00C => {
-                unimplemented!()
+                let address = 0xFF00+(*self.registers.c.get_value() as u16);
+                self.registers.a.set_value(mmu.read_byte(address)?);
+
+                Ok(2)
             }
             Instruction::LD_FF00CA => {
-                unimplemented!()
+                let address = 0xFF00+(*self.registers.c.get_value() as u16);
+
+                mmu.write_byte(address, *self.registers.a.get_value())?;
+
+                Ok(2)
             }
             Instruction::LD_HLIA => {
                 let hl = self.registers.hl();
