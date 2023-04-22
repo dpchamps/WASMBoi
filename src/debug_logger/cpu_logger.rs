@@ -7,7 +7,6 @@ lazy_static! {
 
 #[derive(Default)]
 pub struct CpuDebug {
-    env_var: String,
     current_instruction: bool,
     current_register_values: bool,
     alu: bool,
@@ -22,7 +21,6 @@ pub struct CpuDebug {
 impl FromEnvList for CpuDebug {
     fn from_env_list(debug_list: &[String]) -> Self {
         CpuDebug {
-            env_var: String::new(),
             current_instruction: debug_list.contains(&"PC".into()),
             current_register_values: debug_list.contains(&"REG".into()),
             alu: debug_list.contains(&"ALU".into()),
