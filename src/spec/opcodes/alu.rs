@@ -6,7 +6,7 @@ use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::{RegisterError, RegisterRefMut, TRegister};
-use crate::spec::register_ops::{FlagRegister, Flags, RegisterOp};
+use crate::spec::register_ops::{FlagRegister, RegisterOp};
 
 use std::num::Wrapping;
 

@@ -226,7 +226,7 @@ where
         let n = false;
         let h = self.value.half_carry_add(&value);
         let c = self.value.full_carry_add(&value);
-        let mut flags = FlagRegister::new_with_existing(z, n, h, c, self.flags);
+        let flags = FlagRegister::new_with_existing(z, n, h, c, self.flags);
 
         RegisterOpResult::new(result, flags)
     }

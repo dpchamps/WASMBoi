@@ -4,10 +4,10 @@ use crate::spec::mmu::{Error as MmuError, MMU};
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 
-use crate::debug_logger::{cpu_logger::CPU_LOGGER, DebugLogger, FromEnvList};
+use crate::debug_logger::{cpu_logger::CPU_LOGGER, DebugLogger};
 use crate::spec::register::{RegisterError, Registers, TRegister};
 use std::convert::TryFrom;
-use std::env;
+
 use std::num::Wrapping;
 
 pub trait TCPU {
