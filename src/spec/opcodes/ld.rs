@@ -68,7 +68,9 @@ impl CPU {
                 Ok(2)
             }
             Instruction::LD_HLN => {
-                unimplemented!()
+                mmu.write_byte(self.registers.hl(), opcode_data[0])?;
+
+                Ok(3)
             }
             Instruction::LD_ABC => {
                 unimplemented!()

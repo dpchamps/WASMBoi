@@ -5,7 +5,6 @@ pub fn left_shift(b: u8) -> u16 {
 const OPCODE_HI_MASK: u8 = 0b00111000;
 const OPCODE_LO_MASK: u8 = 0b111;
 
-
 pub fn hi_lo_combine(hi: u8, lo: u8) -> u16 {
     left_shift(hi) | (lo as u16)
 }

@@ -1,9 +1,7 @@
-
-
-use wasmboi::spec::cpu::CPU;
-use wasmboi::spec::gameboy::{Peripheral, GameBoy};
 use std::env;
 use std::fs;
+use wasmboi::spec::cpu::CPU;
+use wasmboi::spec::gameboy::{GameBoy, Peripheral};
 
 fn main() {
     let rom_location = env::var("ROM").unwrap();

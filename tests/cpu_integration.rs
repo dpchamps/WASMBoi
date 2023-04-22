@@ -51,7 +51,6 @@ fn blargg_03_op_sp_hl() -> Result<(), String> {
     run_test("03_op_sp_hl.gb")
 }
 
-#[ignore]
 #[test]
 #[timeout(2000)]
 fn blargg_04_op_r_imm() -> Result<(), String> {

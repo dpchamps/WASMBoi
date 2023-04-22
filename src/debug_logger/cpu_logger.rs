@@ -1,6 +1,5 @@
 use crate::debug_logger::{DebugLogger, FromEnvList};
 
-
 lazy_static! {
     pub static ref CPU_LOGGER: CpuDebug = CpuDebug::env("CPU_DEBUG").build();
 }
@@ -37,8 +36,8 @@ impl FromEnvList for CpuDebug {
 impl DebugLogger for CpuDebug {
     #[cfg(debug_assertions)]
     fn log<F>(&self, t: &str, f: F)
-        where
-            F: Fn(),
+    where
+        F: Fn(),
     {
         let should_log = match t {
             "PC" => self.current_instruction,
@@ -60,8 +59,8 @@ impl DebugLogger for CpuDebug {
 
     #[cfg(not(debug_assertions))]
     fn log<F>(&self, t: &str, f: F)
-        where
-            F: Fn() -> (),
+    where
+        F: Fn() -> (),
     {
     }
 }

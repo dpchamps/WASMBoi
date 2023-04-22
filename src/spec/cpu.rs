@@ -4,11 +4,11 @@ use crate::spec::mmu::{Error as MmuError, MMU};
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 
+use crate::debug_logger::{cpu_logger::CPU_LOGGER, DebugLogger, FromEnvList};
 use crate::spec::register::{RegisterError, Registers, TRegister};
 use std::convert::TryFrom;
 use std::env;
 use std::num::Wrapping;
-use crate::debug_logger::{DebugLogger, FromEnvList, cpu_logger::CPU_LOGGER};
 
 pub trait TCPU {
     type E;
@@ -194,8 +194,7 @@ impl CPU {
 
     pub fn handle_interrupts(&mut self, mmu: &mut MMU) -> Result<u8, Error> {
         if let Some(interrupt) = mmu.interrupts_enabled()? {
-            CPU_LOGGER
-                .log("INTS", || println!("Handling Interrupt: {:?}", interrupt));
+            CPU_LOGGER.log("INTS", || println!("Handling Interrupt: {:?}", interrupt));
 
             let isr = interrupt.get_isr_location();
 

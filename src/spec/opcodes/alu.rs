@@ -6,7 +6,7 @@ use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
 use crate::spec::register::{RegisterError, RegisterRefMut, TRegister};
-use crate::spec::register_ops::{FlagRegister, RegisterOp};
+use crate::spec::register_ops::{FlagRegister, Flags, RegisterOp};
 
 use std::num::Wrapping;
 
@@ -49,16 +49,10 @@ impl CPU {
             }
             Instruction::ADC_AN => {
                 self.registers.op_with_effect(|registers| {
-                    let mut result = RegisterOp::new(*registers.a.get_value())
-                        .add(opcode_data[0] + registers.flag_register().c);
+                    let result =
+                        RegisterOp::from(RegisterOp::new(*registers.a.get_value()).add(opcode_data[0])).add(registers.flag_register().c);
+
                     registers.a.set_value(result.value);
-
-                    result.flags.update(|flags| {
-                        let mut next_flags = flags;
-                        next_flags.n = 0;
-
-                        next_flags
-                    });
 
                     Ok(result)
                 })?;
@@ -89,7 +83,18 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::SBC_AN => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::from(
+                        RegisterOp::new(*registers.a.get_value()).sub(opcode_data[0]),
+                    )
+                    .sub(registers.flag_register().c);
+
+                    registers.a.set_value(result.value);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::SBC_AHL => {
                 unimplemented!()
@@ -157,7 +162,14 @@ impl CPU {
                 Ok(1)
             }
             Instruction::OR_N => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::new(*registers.a.get_value()).or(opcode_data[0]);
+                    registers.a.set_value(result.value);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::OR_HL => {
                 let value = mmu.read_byte(self.registers.hl())?;

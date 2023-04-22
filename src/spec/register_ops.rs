@@ -1,4 +1,4 @@
-use std::ops::{Deref};
+use std::ops::Deref;
 use std::u16;
 
 use crate::util::byte_ops::hi_lo_combine;
@@ -36,7 +36,7 @@ impl From<Flags> for FlagRegister {
     }
 }
 
-#[derive(Default, PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Default, Hash, Debug)]
 pub struct FlagRegister(pub u8);
 
 impl FlagRegister {
@@ -48,12 +48,42 @@ impl FlagRegister {
         FlagRegister(((z as u8) << 7) | ((n as u8) << 6) | ((h as u8) << 5) | (c as u8) << 4)
     }
 
+    pub fn new_with_existing(
+        z: bool,
+        n: bool,
+        h: bool,
+        c: bool,
+        other_flags: Option<FlagRegister>,
+    ) -> Self {
+        let mut flags =
+            FlagRegister(((z as u8) << 7) | ((n as u8) << 6) | ((h as u8) << 5) | (c as u8) << 4);
+
+        if let Some(other) = other_flags {
+            flags.or_from_flags(other)
+        };
+
+        flags
+    }
+
     pub fn update<F>(&mut self, mut f: F)
     where
         F: FnMut(Flags) -> Flags,
     {
         let flags = Flags::from(self.0);
         self.0 = FlagRegister::from(f(flags)).get_value();
+    }
+
+    pub fn or_from_flags(&mut self, other: FlagRegister) {
+        let self_flags = Flags::from(&*self);
+        let other_flags = Flags::from(&other);
+        let next = FlagRegister::new(
+            (self_flags.z) != 0,
+            (self_flags.n) != 0,
+            (self_flags.h | other_flags.h) != 0,
+            (self_flags.c | other_flags.c) != 0,
+        );
+
+        self.0 = next.0;
     }
 }
 
@@ -151,6 +181,7 @@ pub trait ToPrimitive<T> {
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Default, Hash, Debug)]
 pub struct RegisterOp<T: Integer> {
     value: T,
+    flags: Option<FlagRegister>,
 }
 
 pub struct RegisterOpResult<T: Integer> {
@@ -171,12 +202,21 @@ impl<T: Integer> RegisterOpResult<T> {
     }
 }
 
+impl<T: Integer> From<RegisterOpResult<T>> for RegisterOp<T> {
+    fn from(value: RegisterOpResult<T>) -> Self {
+        RegisterOp {
+            value: value.value,
+            flags: Some(value.flags),
+        }
+    }
+}
+
 impl<T> RegisterOp<T>
 where
     T: Integer + CarryFlags + WrappingAdd + WrappingSub,
 {
     pub fn new(value: T) -> Self {
-        RegisterOp { value }
+        RegisterOp { value, flags: None }
     }
 
     pub fn add(&self, value: T) -> RegisterOpResult<T> {
@@ -186,7 +226,7 @@ where
         let n = false;
         let h = self.value.half_carry_add(&value);
         let c = self.value.full_carry_add(&value);
-        let flags = FlagRegister::new(z, n, h, c);
+        let mut flags = FlagRegister::new_with_existing(z, n, h, c, self.flags);
 
         RegisterOpResult::new(result, flags)
     }
@@ -198,7 +238,7 @@ where
         let n = true;
         let h = self.value.half_carry_sub(&value);
         let c = self.value.full_carry_sub(&value);
-        let flags = FlagRegister::new(z, n, h, c);
+        let flags = FlagRegister::new_with_existing(z, n, h, c, self.flags);
 
         RegisterOpResult::new(result, flags)
     }
@@ -212,7 +252,10 @@ where
         let n = false;
         let h = false;
 
-        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
+        RegisterOpResult::new(
+            result,
+            FlagRegister::new_with_existing(z, n, h, c, self.flags),
+        )
     }
 
     pub fn rotate_right(&self, value: T) -> RegisterOpResult<T> {
@@ -226,7 +269,10 @@ where
         let n = false;
         let h = false;
 
-        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
+        RegisterOpResult::new(
+            result,
+            FlagRegister::new_with_existing(z, n, h, c, self.flags),
+        )
     }
 
     pub fn or(&self, value: T) -> RegisterOpResult<T> {
@@ -237,7 +283,10 @@ where
         let h = false;
         let c = false;
 
-        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
+        RegisterOpResult::new(
+            result,
+            FlagRegister::new_with_existing(z, n, h, c, self.flags),
+        )
     }
 
     pub fn and(&self, value: T) -> RegisterOpResult<T> {
@@ -248,7 +297,10 @@ where
         let h = true;
         let c = false;
 
-        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
+        RegisterOpResult::new(
+            result,
+            FlagRegister::new_with_existing(z, n, h, c, self.flags),
+        )
     }
 
     pub fn xor(&self, value: T) -> RegisterOpResult<T> {
@@ -259,7 +311,10 @@ where
         let h = false;
         let c = false;
 
-        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
+        RegisterOpResult::new(
+            result,
+            FlagRegister::new_with_existing(z, n, h, c, self.flags),
+        )
     }
 }
 
@@ -274,7 +329,10 @@ impl RegisterOp<u8> {
         let h = false;
         let c = false;
 
-        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
+        RegisterOpResult::new(
+            result,
+            FlagRegister::new_with_existing(z, n, h, c, self.flags),
+        )
     }
 }
 
@@ -289,7 +347,10 @@ impl RegisterOp<u16> {
         let h = false;
         let c = false;
 
-        RegisterOpResult::new(result, FlagRegister::new(z, n, h, c))
+        RegisterOpResult::new(
+            result,
+            FlagRegister::new_with_existing(z, n, h, c, self.flags),
+        )
     }
 }
 
