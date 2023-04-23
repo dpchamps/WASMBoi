@@ -95,14 +95,14 @@ impl Clock {
         let timer_control = TimerControl::from(mmu.read_byte(TAC_ADDR)?);
         let tac_frequency = timer_control.clock_select;
 
-        // println!("{:?}: {}/{}", timer_control, self.tima_cycles, tac_frequency);
 
         if !timer_control.enabled {
             return Ok(());
         }
 
         self.tima_cycles += self.t_cycles();
-        if self.tima_cycles >= tac_frequency {
+        while self.tima_cycles >= tac_frequency {
+            self.tima_cycles -= tac_frequency;
             let next_tima = match mmu.read_byte(TIMA_ADDR)?.checked_add(1) {
                 Some(next_tima) => next_tima,
                 None => {
@@ -114,8 +114,6 @@ impl Clock {
             };
 
             mmu.write_byte(TIMA_ADDR, next_tima)?;
-
-            self.tima_cycles = 0;
         }
 
         Ok(())
@@ -125,7 +123,7 @@ impl Clock {
         let _div = mmu.read_byte(DIV_ADDR)?;
         let div_frequency = 255;
 
-        self.div_cycles += self.t_cycles();
+        self.div_cycles += self.cycles;
 
         if self.div_cycles >= div_frequency {
             let next_div = Wrapping(mmu.read_byte(DIV_ADDR)?) + Wrapping(1);

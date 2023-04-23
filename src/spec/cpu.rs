@@ -213,7 +213,6 @@ impl CPU {
         Ok(0)
     }
 
-    #[cfg(debug_assertions)]
     pub fn gameboy_doc_debug(&self, mmu: &MMU) {
         CPU_LOGGER.log("GB_DOC", || {
             let pc_mem = [

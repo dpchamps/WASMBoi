@@ -238,7 +238,7 @@ impl CPU {
                     Ok(result)
                 })?;
 
-                Ok(1)
+                Ok(2)
             }
             Instruction::XOR_HL => {
                 let value = mmu.read_byte(self.registers.hl())?;
@@ -447,7 +447,7 @@ impl CPU {
 
                     Ok(result)
                 })?;
-                Ok(2)
+                Ok(4)
             }
             Instruction::INC_RR => {
                 let dd = instruction_data.opcode_info.hi >> 1;

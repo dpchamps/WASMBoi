@@ -120,7 +120,7 @@ impl CPU {
                     Ok(result)
                 })?;
 
-                Ok(2)
+                Ok(4)
             }
             Instruction::RRC_R => {
                 self.registers.op_with_effect(|registers| {
@@ -180,7 +180,7 @@ impl CPU {
                     Ok(result)
                 })?;
 
-                Ok(2)
+                Ok(4)
             }
             Instruction::SLA_R => {
                 self.registers.op_with_effect(|registers| {
@@ -287,7 +287,7 @@ impl CPU {
                     Ok(result)
                 })?;
 
-                Ok(2)
+                Ok(4)
             }
             Instruction::BIT_NR => {
                 let bit = 1 << instruction_data.opcode_info.hi;

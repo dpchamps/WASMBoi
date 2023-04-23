@@ -103,10 +103,10 @@ impl CPU {
                     let stack_val = self.pop_stack_word(mmu)?;
                     self.registers.pc.set_value(stack_val);
 
-                    return Ok(4);
+                    return Ok(5);
                 }
 
-                Ok(3)
+                Ok(2)
             }
             Instruction::RETI => {
                 let stack_val = self.pop_stack_word(mmu)?;
