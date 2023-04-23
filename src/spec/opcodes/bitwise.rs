@@ -208,7 +208,19 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::BIT_NR => {
-                unimplemented!()
+                let bit = 1 << instruction_data.opcode_info.hi;
+                let reg = self.registers.reg_from_byte(instruction_data.opcode_info.lo)?;
+
+                let selected_bit = (reg.get_eight_bit_val()? & bit);
+                let mut flags = self.registers.flag_register();
+                flags.z = (selected_bit == 0) as u8;
+                flags.h = 1;
+                flags.n = 0;
+
+                self.registers.f.set_value(flags.into());
+
+
+                Ok(2)
             }
             Instruction::BIT_NHL => {
                 unimplemented!()
@@ -227,7 +239,15 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::RES_NR => {
-                unimplemented!()
+                let bit = 1 << instruction_data.opcode_info.hi;
+                let mut reg = self.registers.reg_from_byte(instruction_data.opcode_info.lo)?;
+
+                // 100 -> 11111011
+                // 0b10101110 & 11111011
+
+                reg.set_eight_bit_val(reg.get_eight_bit_val()? & !bit)?;
+
+                Ok(2)
             }
             Instruction::RES_NHL => {
                 unimplemented!()

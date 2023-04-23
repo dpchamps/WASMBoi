@@ -98,7 +98,6 @@ fn blargg_09_op_r_r() -> Result<(), String> {
 }
 
 #[ignore]
-#[test]
 #[timeout(2000)]
 fn blargg_10_bit_ops() -> Result<(), String> {
     run_test("10_bit_ops.gb")

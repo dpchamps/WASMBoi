@@ -168,6 +168,8 @@ impl CPU {
             | Mnemonic::SWAP
             | Mnemonic::SRA
             | Mnemonic::SET
+            | Mnemonic::BIT
+            | Mnemonic::RES
             | Mnemonic::SRL => self.evaluate_bitwise(instruction_data, opcode_data, mmu),
             Mnemonic::CCF
             | Mnemonic::SCF
