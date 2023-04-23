@@ -17,7 +17,7 @@ impl CPU {
         match instruction_data.instruction {
             Instruction::CCF => {
                 let mut flags = self.registers.flag_register();
-                flags.c = !(flags.c != 0) as u8;
+                flags.c = (flags.c == 0) as u8;
                 flags.h = 0;
                 flags.n = 0;
 
