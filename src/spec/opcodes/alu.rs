@@ -42,7 +42,17 @@ impl CPU {
                 Ok(2)
             }
             Instruction::ADD_AHL => {
-                unimplemented!()
+                let value = mmu.read_byte(self.registers.hl())?;
+
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::new(*registers.a.get_value()).add(value);
+
+                    registers.a.set_value(result.value);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::ADC_AR => {
                 let value = self
@@ -75,7 +85,19 @@ impl CPU {
                 Ok(2)
             }
             Instruction::ADC_AHL => {
-                unimplemented!()
+                let value = mmu.read_byte(self.registers.hl())?;
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::from(
+                        RegisterOp::new(*registers.a.get_value()).add(value),
+                    )
+                        .add(registers.flag_register().c);
+
+                    registers.a.set_value(result.value);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::SUB_R => {
                 let value = self
@@ -104,7 +126,17 @@ impl CPU {
                 Ok(2)
             }
             Instruction::SUB_HL => {
-                unimplemented!()
+                let value = mmu.read_byte(self.registers.hl())?;
+
+                self.registers.op_with_effect(|registers| {
+                    let op_result = RegisterOp::new(*registers.a.get_value()).sub(value);
+
+                    registers.a.set_value(op_result.value);
+
+                    Ok(op_result)
+                })?;
+
+                Ok(2)
             }
             Instruction::SBC_AR => {
                 let value = self
@@ -138,7 +170,19 @@ impl CPU {
                 Ok(2)
             }
             Instruction::SBC_AHL => {
-                unimplemented!()
+                let value = mmu.read_byte(self.registers.hl())?;
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::from(
+                        RegisterOp::new(*registers.a.get_value()).sub(value),
+                    )
+                        .sub(registers.flag_register().c);
+
+                    registers.a.set_value(result.value);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::AND_R => {
                 let value = self
@@ -166,7 +210,15 @@ impl CPU {
                 Ok(2)
             }
             Instruction::AND_HL => {
-                unimplemented!()
+                let value = mmu.read_byte(self.registers.hl())?;
+                self.registers.op_with_effect(|registers| {
+                    let result = RegisterOp::new(*registers.a.get_value()).and(value);
+
+                    registers.a.set_value(result.value);
+
+                    Ok(result)
+                })?;
+                Ok(2)
             }
             Instruction::XOR_R => {
                 let reg_r_value = self
@@ -276,7 +328,16 @@ impl CPU {
                 Ok(1)
             }
             Instruction::INC_HL => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let value = mmu.read_byte(registers.hl())?;
+                    let mut result = RegisterOp::new(value).add(1);
+                    result.set_mask(FlagRegister::new(true, true, true, false));
+
+                    mmu.write_byte(registers.hl(), result.value)?;
+                    Ok(result)
+                })?;
+
+                Ok(3)
             }
             Instruction::DEC_R => {
                 self.registers.op_with_effect(|registers| {
@@ -299,7 +360,8 @@ impl CPU {
             Instruction::DEC_HL => {
                 self.registers.op_with_effect(|registers| {
                     let value = mmu.read_byte(registers.hl())?;
-                    let result = RegisterOp::new(value).sub(1);
+                    let mut result = RegisterOp::new(value).sub(1);
+                    result.set_mask(FlagRegister::new(true, true, true, false));
 
                     mmu.write_byte(registers.hl(), result.value)?;
 

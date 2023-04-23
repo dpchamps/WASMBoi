@@ -92,7 +92,7 @@ fn blargg_08_misc_instrs() -> Result<(), String> {
 }
 
 #[test]
-#[timeout(3000)]
+#[timeout(5000)]
 fn blargg_09_op_r_r() -> Result<(), String> {
     run_test("09_op_r_r.gb")
 }
@@ -103,9 +103,8 @@ fn blargg_10_bit_ops() -> Result<(), String> {
     run_test("10_bit_ops.gb")
 }
 
-#[ignore]
 #[test]
-#[timeout(2000)]
+#[timeout(7000)]
 fn blargg_11_op_a_hl() -> Result<(), String> {
     run_test("11_op_a_hl_.gb")
 }

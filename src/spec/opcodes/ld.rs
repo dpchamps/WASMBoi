@@ -73,7 +73,9 @@ impl CPU {
                 Ok(3)
             }
             Instruction::LD_ABC => {
-                unimplemented!()
+                self.registers.a.set_value(mmu.read_byte(self.registers.bc())?);
+
+                Ok(2)
             }
             Instruction::LD_ADE => {
                 let value = mmu.read_byte(self.registers.de())?;
@@ -95,7 +97,8 @@ impl CPU {
                 Ok(4)
             }
             Instruction::LD_BCA => {
-                unimplemented!()
+                mmu.write_byte(self.registers.bc(), *self.registers.a.get_value())?;
+                Ok(2)
             }
             Instruction::LD_DEA => {
                 mmu.write_byte(self.registers.de(), *self.registers.a.get_value())?;
@@ -152,7 +155,12 @@ impl CPU {
                 Ok(2)
             }
             Instruction::LD_AHLD => {
-                unimplemented!()
+                let hl = self.registers.hl();
+                self.registers.a.set_value(mmu.read_byte(hl)?);
+                let next_hl = hl.wrapping_sub(1);
+                self.registers.hl_mut().set_value_16(next_hl);
+
+                Ok(2)
             }
             Instruction::LD_RRNN => {
                 let dd = instruction_data.opcode_info.hi >> 1;

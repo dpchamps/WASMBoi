@@ -13,7 +13,7 @@ impl CPU {
         &mut self,
         instruction_data: &InstructionData,
         _opcode_data: &[u8; 2],
-        _mmu: &mut MMU,
+        mmu: &mut MMU,
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::RLCA => {
@@ -79,7 +79,17 @@ impl CPU {
                 Ok(2)
             }
             Instruction::RLC_HL => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let value = mmu.read_byte(registers.hl())?;
+                    let mut result = RegisterOp::new(value).rotate_left(1);
+
+                    mmu.write_byte(registers.hl(), result.value)?;
+                    result.flags.update_zero(result.value.clone());
+
+                    Ok(result)
+                })?;
+
+                Ok(4)
             }
             Instruction::RL_R => {
                 let carry_flag = self.registers.flag_register().c;
@@ -97,7 +107,20 @@ impl CPU {
                 Ok(2)
             }
             Instruction::RL_HL => {
-                unimplemented!()
+                let carry_flag = self.registers.flag_register().c;
+
+                self.registers.op_with_effect(|registers| {
+                    let value = mmu.read_byte(registers.hl())?;
+                    let mut result = RegisterOp::new(value).rotate_left(1);
+                    let carried_result = (result.value & 0xFE) | carry_flag;
+
+                    mmu.write_byte(registers.hl(), carried_result)?;
+                    result.flags.update_zero(carried_result);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::RRC_R => {
                 self.registers.op_with_effect(|registers| {
@@ -114,7 +137,18 @@ impl CPU {
                 Ok(2)
             }
             Instruction::RRC_HL => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let value = mmu.read_byte(registers.hl())?;
+                    let mut result = RegisterOp::new(value).rotate_right(1);
+
+                    mmu.write_byte(registers.hl(), result.value)?;
+
+                    result.flags.update_zero(result.value.clone());
+
+                    Ok(result)
+                })?;
+
+                Ok(4)
             }
             Instruction::RR_R => {
                 let carry_flag = (self.registers.flag_register().c << 7) | 0x7F;
@@ -132,7 +166,22 @@ impl CPU {
                 Ok(2)
             }
             Instruction::RR_HL => {
-                unimplemented!()
+                let carry_flag = (self.registers.flag_register().c << 7) | 0x7F;
+
+                self.registers.op_with_effect(|registers| {
+                    let value = mmu.read_byte(registers.hl())?;
+                    let mut result = RegisterOp::new(value).rotate_right(1);
+                    let carried_result = carry_flag & (result.value | 0x80);
+
+                    mmu.write_byte(registers.hl(), carried_result)?;
+
+                    result.flags.update_zero(carried_result);
+
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::SLA_R => {
                 self.registers.op_with_effect(|registers| {
@@ -148,7 +197,18 @@ impl CPU {
                 Ok(2)
             }
             Instruction::SLA_HL => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let value = mmu.read_byte(registers.hl())?;
+                    let mut result = RegisterOp::new(value).rotate_left(1);
+                    let carried_result = result.value & 0xFE;
+
+                    mmu.write_byte(registers.hl(), carried_result)?;
+                    result.flags.update_zero(carried_result);
+
+                    Ok(result)
+                })?;
+
+                Ok(4)
             }
             Instruction::SWAP_R => {
                 self.registers.op_with_effect(|registers| {
@@ -164,10 +224,10 @@ impl CPU {
             }
             Instruction::SWAP_HL => {
                 self.registers.op_with_effect(|registers| {
-                    let mut reg = registers.reg_from_byte(instruction_data.opcode_info.lo)?;
-                    let result = RegisterOp::new(reg.get_sixtn_bit_val()?).swap();
+                    let value = mmu.read_byte(registers.hl())?;
+                    let result = RegisterOp::new(value).swap();
 
-                    reg.set_sixtn_bit_val(result.value)?;
+                    mmu.write_byte(registers.hl(), result.value)?;
 
                     Ok(result)
                 })?;
@@ -189,7 +249,19 @@ impl CPU {
                 Ok(2)
             }
             Instruction::SRA_HL => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let value = mmu.read_byte(registers.hl())?;
+                    let bit_val = value & 0x80;
+                    let mut result = RegisterOp::new(value).rotate_right(1);
+                    let carried_result = (result.value & 0x7f) | bit_val;
+
+                    mmu.write_byte(registers.hl(), carried_result)?;
+                    result.flags.update_zero(carried_result);
+
+                    Ok(result)
+                })?;
+
+                Ok(4)
             }
             Instruction::SRL_R => {
                 self.registers.op_with_effect(|registers| {
@@ -205,7 +277,18 @@ impl CPU {
                 Ok(2)
             }
             Instruction::SRL_HL => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let value = mmu.read_byte(registers.hl())?;
+                    let mut result = RegisterOp::new(value).rotate_right(1);
+                    let carried_result =0b01111111 & result.value;
+
+                    mmu.write_byte(registers.hl(), carried_result)?;
+                    result.flags.update_zero(carried_result);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::BIT_NR => {
                 let bit = 1 << instruction_data.opcode_info.hi;
@@ -224,7 +307,18 @@ impl CPU {
                 Ok(2)
             }
             Instruction::BIT_NHL => {
-                unimplemented!()
+                let bit = 1 << instruction_data.opcode_info.hi;
+                let value = mmu.read_byte(self.registers.hl())?;
+
+                let selected_bit = value & bit;
+                let mut flags = self.registers.flag_register();
+                flags.z = (selected_bit == 0) as u8;
+                flags.h = 1;
+                flags.n = 0;
+
+                self.registers.f.set_value(flags.into());
+
+                Ok(3)
             }
             Instruction::SET_NR => {
                 let bit = 1 << instruction_data.opcode_info.hi;
@@ -237,7 +331,12 @@ impl CPU {
                 Ok(2)
             }
             Instruction::SET_NHL => {
-                unimplemented!()
+                let bit = 1 << instruction_data.opcode_info.hi;
+                let value = mmu.read_byte(self.registers.hl())?;
+
+                mmu.write_byte(self.registers.hl(), value | bit)?;
+
+                Ok(4)
             }
             Instruction::RES_NR => {
                 let bit = 1 << instruction_data.opcode_info.hi;
@@ -253,7 +352,12 @@ impl CPU {
                 Ok(2)
             }
             Instruction::RES_NHL => {
-                unimplemented!()
+                let bit = 1 << instruction_data.opcode_info.hi;
+                let value = mmu.read_byte(self.registers.hl())?;
+
+                mmu.write_byte(self.registers.hl(), value & !bit)?;
+
+                Ok(4)
             }
             _ => Err(unexpected_op(&instruction_data.mnemonic, &Mnemonic::PUSH)),
         }

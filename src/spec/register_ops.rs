@@ -197,6 +197,7 @@ pub struct RegisterOp<T: Integer> {
     flags: Option<FlagRegister>,
 }
 
+#[derive(Debug)]
 pub struct RegisterOpResult<T: Integer> {
     pub value: T,
     pub flags: FlagRegister,
