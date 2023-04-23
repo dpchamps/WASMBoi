@@ -187,9 +187,6 @@ impl CPU {
             | Mnemonic::DB
             | Mnemonic::DW => self.evaluate_branch(instruction_data, opcode_data, mmu),
             Mnemonic::UNIMPLEMENTED => Ok(0),
-            _ => Err(Error::UnsupportedOpcode(
-                instruction_data.instruction.clone(),
-            )),
         }?;
         Ok(result)
     }

@@ -193,8 +193,8 @@ pub struct Registers {
     pub sp: Register<u16>,
 }
 
-impl Registers {
-    pub fn new() -> Registers {
+impl Default for Registers {
+    fn default() -> Self {
         Registers {
             a: Register::new(0x01, RegisterType::A),
             b: Register::new(0x00, RegisterType::B),
@@ -207,6 +207,12 @@ impl Registers {
             pc: Register::new(0x100, RegisterType::PC),
             sp: Register::new(0xFFFE, RegisterType::SP),
         }
+    }
+}
+
+impl Registers {
+    pub fn new() -> Registers {
+        Registers::default()
     }
 
     pub fn flag_register(&self) -> Flags {

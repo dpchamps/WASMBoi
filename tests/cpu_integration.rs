@@ -1,13 +1,7 @@
-use std::cell::RefCell;
-use std::fs;
-
 use ntest::timeout;
-use std::time::Instant;
-use wasmboi::spec;
-use wasmboi::spec::gameboy::Peripheral;
 
 mod util;
-use util::{run_integration_test as run_test};
+use util::run_integration_test as run_test;
 
 #[test]
 #[timeout(2000)]

@@ -135,28 +135,22 @@ pub enum Instruction {
 
 impl Instruction {
     pub fn is_branch(instruction: &Instruction) -> bool {
-        match instruction {
+        matches!(
+            instruction,
             Instruction::JP_NN
-            | Instruction::JP_HL
-            | Instruction::JP_FNN
-            | Instruction::CALL_FNN
-            | Instruction::CALL_NN => true,
-            _ => false,
-        }
+                | Instruction::JP_HL
+                | Instruction::JP_FNN
+                | Instruction::CALL_FNN
+                | Instruction::CALL_NN
+        )
     }
 
     pub fn is_return(instruction: &Instruction) -> bool {
-        match instruction {
-            Instruction::RET => true,
-            _ => false,
-        }
+        matches!(instruction, Instruction::RET)
     }
 
     pub fn is_call(instruction: &Instruction) -> bool {
-        match instruction {
-            Instruction::CALL_FNN | Instruction::CALL_NN => true,
-            _ => false,
-        }
+        matches!(instruction, Instruction::CALL_FNN | Instruction::CALL_NN)
     }
 
     pub fn get_size(instruction: &Instruction) -> usize {

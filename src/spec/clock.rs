@@ -52,10 +52,10 @@ impl From<u8> for TimerControl {
     fn from(value: u8) -> Self {
         let enabled = ((value & 0b100) >> 2) == 1;
         let clock_select = match value & 0b011 {
-            00 => 1024,
-            01 => 16,
-            10 => 64,
-            11 => 256,
+            0b00 => 1024,
+            0b01 => 16,
+            0b10 => 64,
+            0b11 => 256,
             _ => unreachable!(),
         };
 
@@ -94,7 +94,6 @@ impl Clock {
     fn update_tima(&mut self, mmu: &mut MMU) -> Result<(), TimerError> {
         let timer_control = TimerControl::from(mmu.read_byte(TAC_ADDR)?);
         let tac_frequency = timer_control.clock_select;
-
 
         if !timer_control.enabled {
             return Ok(());

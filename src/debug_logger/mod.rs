@@ -7,7 +7,6 @@ pub trait FromEnvList {
 }
 
 pub struct Builder {
-    env_var: String,
     list: Box<[String]>,
 }
 
@@ -25,7 +24,6 @@ pub trait DebugLogger: Default + FromEnvList {
         let env_contents = env::var(env_var).unwrap_or("".into());
 
         Builder {
-            env_var: env_var.into(),
             list: env_contents
                 .split(',')
                 .map(String::from)
