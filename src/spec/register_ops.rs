@@ -19,6 +19,12 @@ impl From<&FlagRegister> for Flags {
     }
 }
 
+impl From<Flags> for u8 {
+    fn from(value: Flags) -> Self {
+        FlagRegister::from(value).0
+    }
+}
+
 impl From<u8> for Flags {
     fn from(byte: u8) -> Self {
         Flags {
@@ -71,6 +77,13 @@ impl FlagRegister {
     {
         let flags = Flags::from(self.0);
         self.0 = FlagRegister::from(f(flags)).get_value();
+    }
+
+    pub fn update_zero(&mut self, value: u8) {
+        let mut flags = Flags::from(self.0);
+
+        flags.z = (value == 0) as u8;
+        self.0 = FlagRegister::from(flags).get_value();
     }
 
     pub fn or_from_flags(&mut self, other: FlagRegister) {
@@ -244,7 +257,7 @@ where
     }
 
     pub fn rotate_left(&self, value: T) -> RegisterOpResult<T> {
-        let c = self.value.bitand(T::from(0b10000000).unwrap()) == T::from(1).unwrap();
+        let c = self.value.bitand(T::from(0x80).unwrap()) == T::from(0x80).unwrap();
 
         let result = self.value.rotate_left(cast(value).unwrap());
 
@@ -265,7 +278,7 @@ where
 
         let result = self.value.rotate_right(cast(value).unwrap());
 
-        let z = result == T::from(0).unwrap();
+        let z = false;
         let n = false;
         let h = false;
 

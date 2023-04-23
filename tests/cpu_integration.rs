@@ -4,7 +4,7 @@ use std::fs;
 use ntest::timeout;
 use wasmboi::spec;
 use wasmboi::spec::gameboy::Peripheral;
-
+use std::time::Instant;
 fn run_test(fixture_name: &str) -> Result<(), String> {
     let fixture_location = format!("./tests/fixtures/{}", fixture_name);
     let rom = fs::read(&fixture_location)
@@ -19,9 +19,10 @@ fn run_test(fixture_name: &str) -> Result<(), String> {
             serial_port_out.borrow_mut().push(c);
         }
     })));
-
+    let mut cycles = 0;
+    let now = Instant::now();
     while !serial_port_out.borrow().contains("Passed") {
-        gameboy
+        cycles += gameboy
             .cycle()
             .map_err(|e| format!("Failed to execute gameboy cycle with error {:?}", e))?;
 
@@ -29,6 +30,14 @@ fn run_test(fixture_name: &str) -> Result<(), String> {
             return Err(format!("{} received fail code from ROM", fixture_name));
         }
     }
+
+    let t_cycles = cycles * 4;
+    let expected_seconds = t_cycles as f64 / 4194300.0;
+    let actual_seconds = now.elapsed().as_secs();
+    assert!(actual_seconds as f64 <= expected_seconds);
+    println!("{} took {} cycles to complete. Expected time {} sec. Actual time to complete: {}", fixture_name, t_cycles, expected_seconds, actual_seconds);
+
+
 
     Ok(())
 }
@@ -81,9 +90,8 @@ fn blargg_08_misc_instrs() -> Result<(), String> {
     run_test("08_misc_instrs.gb")
 }
 
-#[ignore]
 #[test]
-#[timeout(2000)]
+#[timeout(3000)]
 fn blargg_09_op_r_r() -> Result<(), String> {
     run_test("09_op_r_r.gb")
 }

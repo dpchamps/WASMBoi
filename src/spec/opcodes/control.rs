@@ -5,6 +5,7 @@ use crate::spec::mmu::MMU;
 use crate::spec::mnemonic::Mnemonic;
 use crate::spec::opcode::Instruction;
 use crate::spec::opcodes::unexpected_op;
+use crate::spec::register::TRegister;
 
 impl CPU {
     pub(crate) fn evaluate_control(
@@ -15,10 +16,24 @@ impl CPU {
     ) -> Result<u8, Error> {
         match instruction_data.instruction {
             Instruction::CCF => {
-                unimplemented!()
+                let mut flags = self.registers.flag_register();
+                flags.c = !(flags.c != 0) as u8;
+                flags.h = 0;
+                flags.n = 0;
+
+                self.registers.f.set_value(flags.into());
+
+                Ok(1)
             }
             Instruction::SCF => {
-                unimplemented!()
+                let mut flags = self.registers.flag_register();
+                flags.c = 1;
+                flags.h = 0;
+                flags.n = 0;
+
+                self.registers.f.set_value(flags.into());
+
+                Ok(1)
             }
             Instruction::NOP => Ok(1),
             Instruction::HALT => {

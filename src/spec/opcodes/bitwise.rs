@@ -25,7 +25,20 @@ impl CPU {
                 Ok(1)
             }
             Instruction::RLA => {
-                unimplemented!()
+                let carry_flag = self.registers.flag_register().c;
+                let value = self
+                    .registers
+                    .op(|registers| RegisterOp::new(*registers.a.get_value()).rotate_left(1));
+
+                self.registers.f.set_value(
+                    FlagRegister::new(false, false, false, true).0 & *self.registers.f.get_value(),
+                );
+
+                self.registers.a.set_value(
+                    (value & 0xFE) | carry_flag
+                );
+
+                Ok(1)
             }
             Instruction::RRCA => {
                 let value = self
@@ -54,19 +67,54 @@ impl CPU {
                 Ok(1)
             }
             Instruction::RLC_R => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let mut reg = registers.reg_from_byte(instruction_data.opcode_info.lo)?;
+                    let mut result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_left(1);
+
+                    reg.set_eight_bit_val(result.value)?;
+
+                    result.flags.update_zero(reg.get_eight_bit_val()?);
+
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::RLC_HL => {
                 unimplemented!()
             }
             Instruction::RL_R => {
-                unimplemented!()
+                let carry_flag = self.registers.flag_register().c;
+
+                self.registers.op_with_effect(|registers| {
+                    let mut reg = registers.reg_from_byte(instruction_data.opcode_info.lo)?;
+                    let mut result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_left(1);
+
+                    reg.set_eight_bit_val((result.value & 0xFE) | carry_flag)?;
+                    result.flags.update_zero(reg.get_eight_bit_val()?);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::RL_HL => {
                 unimplemented!()
             }
             Instruction::RRC_R => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let mut reg = registers.reg_from_byte(instruction_data.opcode_info.lo)?;
+                    let mut result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_right(1);
+
+                    reg.set_eight_bit_val(result.value)?;
+
+                    result.flags.update_zero(reg.get_eight_bit_val()?);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::RRC_HL => {
                 unimplemented!()
@@ -79,11 +127,7 @@ impl CPU {
                     let mut result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_right(1);
                     reg.set_eight_bit_val(carry_flag & (result.value | 0x80))?;
 
-                    result.flags.update(|mut f| {
-                        f.z = (reg.get_eight_bit_val().unwrap() == 0) as u8;
-
-                        f
-                    });
+                    result.flags.update_zero(reg.get_eight_bit_val()?);
 
                     Ok(result)
                 })?;
@@ -94,7 +138,17 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::SLA_R => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let mut reg = registers.reg_from_byte(instruction_data.opcode_info.lo)?;
+                    let mut result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_left(1);
+
+                    reg.set_eight_bit_val(result.value & 0xFE)?;
+                    result.flags.update_zero(reg.get_eight_bit_val()?);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::SLA_HL => {
                 unimplemented!()
@@ -124,7 +178,18 @@ impl CPU {
                 Ok(4)
             }
             Instruction::SRA_R => {
-                unimplemented!()
+                self.registers.op_with_effect(|registers| {
+                    let mut reg = registers.reg_from_byte(instruction_data.opcode_info.lo)?;
+                    let bit_val = reg.get_eight_bit_val()? & 0x80;
+                    let mut result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_right(1);
+
+                    reg.set_eight_bit_val((result.value & 0x7f) | bit_val)?;
+                    result.flags.update_zero(reg.get_eight_bit_val()?);
+
+                    Ok(result)
+                })?;
+
+                Ok(2)
             }
             Instruction::SRA_HL => {
                 unimplemented!()
@@ -132,9 +197,10 @@ impl CPU {
             Instruction::SRL_R => {
                 self.registers.op_with_effect(|registers| {
                     let mut reg = registers.reg_from_byte(instruction_data.opcode_info.lo)?;
-                    let result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_right(1);
+                    let mut result = RegisterOp::new(reg.get_eight_bit_val()?).rotate_right(1);
 
                     reg.set_eight_bit_val(0b01111111 & result.value)?;
+                    result.flags.update_zero(reg.get_eight_bit_val()?);
 
                     Ok(result)
                 })?;
