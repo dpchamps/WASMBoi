@@ -73,7 +73,9 @@ impl CPU {
                 Ok(3)
             }
             Instruction::LD_ABC => {
-                self.registers.a.set_value(mmu.read_byte(self.registers.bc())?);
+                self.registers
+                    .a
+                    .set_value(mmu.read_byte(self.registers.bc())?);
 
                 Ok(2)
             }

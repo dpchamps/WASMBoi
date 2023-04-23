@@ -84,7 +84,7 @@ impl CPU {
                     let mut result = RegisterOp::new(value).rotate_left(1);
 
                     mmu.write_byte(registers.hl(), result.value)?;
-                    result.flags.update_zero(result.value.clone());
+                    result.flags.update_zero(result.value);
 
                     Ok(result)
                 })?;
@@ -143,7 +143,7 @@ impl CPU {
 
                     mmu.write_byte(registers.hl(), result.value)?;
 
-                    result.flags.update_zero(result.value.clone());
+                    result.flags.update_zero(result.value);
 
                     Ok(result)
                 })?;
@@ -176,7 +176,6 @@ impl CPU {
                     mmu.write_byte(registers.hl(), carried_result)?;
 
                     result.flags.update_zero(carried_result);
-
 
                     Ok(result)
                 })?;
@@ -280,7 +279,7 @@ impl CPU {
                 self.registers.op_with_effect(|registers| {
                     let value = mmu.read_byte(registers.hl())?;
                     let mut result = RegisterOp::new(value).rotate_right(1);
-                    let carried_result =0b01111111 & result.value;
+                    let carried_result = 0b01111111 & result.value;
 
                     mmu.write_byte(registers.hl(), carried_result)?;
                     result.flags.update_zero(carried_result);

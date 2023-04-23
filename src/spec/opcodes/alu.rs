@@ -87,10 +87,9 @@ impl CPU {
             Instruction::ADC_AHL => {
                 let value = mmu.read_byte(self.registers.hl())?;
                 self.registers.op_with_effect(|registers| {
-                    let result = RegisterOp::from(
-                        RegisterOp::new(*registers.a.get_value()).add(value),
-                    )
-                        .add(registers.flag_register().c);
+                    let result =
+                        RegisterOp::from(RegisterOp::new(*registers.a.get_value()).add(value))
+                            .add(registers.flag_register().c);
 
                     registers.a.set_value(result.value);
 
@@ -172,10 +171,9 @@ impl CPU {
             Instruction::SBC_AHL => {
                 let value = mmu.read_byte(self.registers.hl())?;
                 self.registers.op_with_effect(|registers| {
-                    let result = RegisterOp::from(
-                        RegisterOp::new(*registers.a.get_value()).sub(value),
-                    )
-                        .sub(registers.flag_register().c);
+                    let result =
+                        RegisterOp::from(RegisterOp::new(*registers.a.get_value()).sub(value))
+                            .sub(registers.flag_register().c);
 
                     registers.a.set_value(result.value);
 
