@@ -2,9 +2,9 @@ use std::cell::RefCell;
 use std::fs;
 
 use ntest::timeout;
+use std::time::Instant;
 use wasmboi::spec;
 use wasmboi::spec::gameboy::Peripheral;
-use std::time::Instant;
 fn run_test(fixture_name: &str) -> Result<(), String> {
     let fixture_location = format!("./tests/fixtures/{}", fixture_name);
     let rom = fs::read(&fixture_location)
@@ -35,9 +35,10 @@ fn run_test(fixture_name: &str) -> Result<(), String> {
     let expected_seconds = t_cycles as f64 / 4194300.0;
     let actual_seconds = now.elapsed().as_secs();
     assert!(actual_seconds as f64 <= expected_seconds);
-    println!("{} took {} cycles to complete. Expected time {} sec. Actual time to complete: {}", fixture_name, t_cycles, expected_seconds, actual_seconds);
-
-
+    println!(
+        "{} took {} cycles to complete. Expected time {} sec. Actual time to complete: {}",
+        fixture_name, t_cycles, expected_seconds, actual_seconds
+    );
 
     Ok(())
 }

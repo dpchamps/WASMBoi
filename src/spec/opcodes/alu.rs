@@ -45,12 +45,14 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::ADC_AR => {
-                let value = self.registers.reg_from_byte(instruction_data.opcode_info.lo)?.get_eight_bit_val()?;
+                let value = self
+                    .registers
+                    .reg_from_byte(instruction_data.opcode_info.lo)?
+                    .get_eight_bit_val()?;
                 self.registers.op_with_effect(|registers| {
-                    let result = RegisterOp::from(
-                        RegisterOp::new(*registers.a.get_value()).add(value),
-                    )
-                        .add(registers.flag_register().c);
+                    let result =
+                        RegisterOp::from(RegisterOp::new(*registers.a.get_value()).add(value))
+                            .add(registers.flag_register().c);
 
                     registers.a.set_value(result.value);
 
@@ -76,7 +78,10 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::SUB_R => {
-                let value = self.registers.reg_from_byte(instruction_data.opcode_info.lo)?.get_eight_bit_val()?;
+                let value = self
+                    .registers
+                    .reg_from_byte(instruction_data.opcode_info.lo)?
+                    .get_eight_bit_val()?;
                 self.registers.op_with_effect(|registers| {
                     let result = RegisterOp::new(*registers.a.get_value()).sub(value);
 
@@ -102,13 +107,15 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::SBC_AR => {
-                let value = self.registers.reg_from_byte(instruction_data.opcode_info.lo)?.get_eight_bit_val()?;
+                let value = self
+                    .registers
+                    .reg_from_byte(instruction_data.opcode_info.lo)?
+                    .get_eight_bit_val()?;
 
                 self.registers.op_with_effect(|registers| {
-                    let result = RegisterOp::from(
-                        RegisterOp::new(*registers.a.get_value()).sub(value),
-                    )
-                        .sub(registers.flag_register().c);
+                    let result =
+                        RegisterOp::from(RegisterOp::new(*registers.a.get_value()).sub(value))
+                            .sub(registers.flag_register().c);
 
                     registers.a.set_value(result.value);
 
@@ -134,7 +141,10 @@ impl CPU {
                 unimplemented!()
             }
             Instruction::AND_R => {
-                let value = self.registers.reg_from_byte(instruction_data.opcode_info.lo)?.get_eight_bit_val()?;
+                let value = self
+                    .registers
+                    .reg_from_byte(instruction_data.opcode_info.lo)?
+                    .get_eight_bit_val()?;
                 self.registers.op_with_effect(|register| {
                     let result = RegisterOp::new(*register.a.get_value()).and(value);
 

@@ -34,9 +34,7 @@ impl CPU {
                     FlagRegister::new(false, false, false, true).0 & *self.registers.f.get_value(),
                 );
 
-                self.registers.a.set_value(
-                    (value & 0xFE) | carry_flag
-                );
+                self.registers.a.set_value((value & 0xFE) | carry_flag);
 
                 Ok(1)
             }
@@ -74,7 +72,6 @@ impl CPU {
                     reg.set_eight_bit_val(result.value)?;
 
                     result.flags.update_zero(reg.get_eight_bit_val()?);
-
 
                     Ok(result)
                 })?;
